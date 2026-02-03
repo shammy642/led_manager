@@ -1,0 +1,22 @@
+<div id="player-{{ player_id }}-device-{{ device.id }}" class="player-device-row">
+    {% set monitoring_active = monitoring_active|default(false) %}
+    <div class="player-device">
+        <strong>{{ device.name }}</strong>
+        <form class="player-device-remove-form" method="post" action="{{ remove_action }}" style="display:inline;">
+            <button class="btn btn--danger player-device-remove-button" type="submit" aria-label="Remove device">
+                <img class="button-icon" src="{{ url_for('static', path='icons/trash-solid-full.svg') }}" alt="" aria-hidden="true">
+            </button>
+        </form>
+    </div>
+
+    {% if device.receivers %}
+        <div class="player-device-receivers">
+            {% for receiver in device.receivers %}
+                <div>
+                    {{ receiver.name }}
+                    <span id="receiver-latency-{{ receiver.id }}" class="receiver-latency" {% if not monitoring_active %}hidden{% endif %}>—</span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

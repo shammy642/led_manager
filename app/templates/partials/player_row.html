@@ -1,0 +1,124 @@
+{% set player_id = player.id if player else 'new' %}
+{% set form_id = 'update-player-' + (player.id|string) if player else 'new-player-form' %}
+{% set monitoring_active = monitoring_active|default(false) %}
+
+<tr id="player-{{ player_id }}" class="player-row player-row--{{ mode }}">
+    <td data-label="Name">
+        {% if monitoring_active %}
+        <span class="player-name">{{ player.name }}</span>
+        {% elif mode == 'edit' %}
+        <div class="player-name-row">
+            <input type="text" name="name" placeholder="{% if mode == 'new' %}Name{% endif %}"
+                value="{{ player.name if player else (create_form.name if create_form else '') }}"
+                hx-post="{{ url_for('update_player', player_id=player_id) }}" hx-trigger="input changed delay:2s"
+                hx-target="#player-{{ player_id }}" hx-swap="outerHTML" form="{{ form_id }}" required>
+            <div class="hidden">
+                <form class="inline-form player-delete-mobile" method="post"
+                    action="{{ url_for('delete_player', player_id=player_id) }}"
+                    onsubmit="return confirm('Are you sure you want to delete {{ player.name }}?');">
+                    <button type="submit" class="btn btn--danger" aria-label="Delete player">
+                        <img class="button-icon" src="{{ url_for('static', path='icons/trash-solid-full.svg') }}" alt=""
+                            aria-hidden="true">
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <input type="text" name="name" placeholder="{% if mode == 'new' %}Name{% endif %}"
+            value="{{ player.name if player else (create_form.name if create_form else '') }}" {% if mode=='edit' %}
+            hx-post="{{ url_for('update_player', player_id=player_id) }}" hx-trigger="input changed delay:2s"
+            hx-target="#player-{{ player_id }}" hx-swap="outerHTML" {% endif %} form="{{ form_id }}" required>
+        {% endif %}
+        {% if mode == 'new' and create_errors and create_errors.name %}
+        <p class="error">{{ create_errors.name }}</p>
+        {% elif mode == 'edit' and update_errors %}
+        {% set player_update_errors = update_errors.get(player_id) or update_errors.get(player_id|string) %}
+        {% if player_update_errors %}
+        <ul class="error-messages">
+            {% for message in player_update_errors if message %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endif %}
+    </td>
+
+    <td data-label="Devices">
+        {% if mode == 'monitor' %}
+        <table class="player-device-receiver-table">
+            <tbody>
+                {% for device in player.devices %}
+                <tr>
+                    <td><strong>{{ device.name }}</strong></td>
+                    <td>
+                        {% if device.receivers %}
+                        <table>
+                            <tbody>
+                                {% for receiver in device.receivers %}
+                                <tr>
+                                    <td>
+                                        {{ receiver.name }}
+                                        <span id="receiver-latency-{{ receiver.id }}" class="receiver-latency" {% if not
+                                            monitoring_active %}hidden{% endif %}>—</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% elif mode == 'edit' %}
+        <div class="player-devices-mobile-actions">
+            <span class="player-devices-mobile-label">Devices</span>
+            <label for="player-{{ player_id }}-add-device-toggle"
+                class="btn btn--success player-add-device-toggle player-add-device-toggle--mobile"
+                aria-controls="add-device-to-player-{{ player_id }}" aria-label="Add device">
+                <span aria-hidden="true">+</span>
+            </label>
+        </div>
+        <input id="player-{{ player_id }}-add-device-toggle" class="player-device-toggle" type="checkbox" hidden {% if
+            add_device_open %}checked{% endif %}>
+
+        <div class="player-device-add-form-container">
+            <form id="add-device-to-player-{{ player_id }}" class="player-device-add-form"
+                hx-post="{{ url_for('add_device_to_player', player_id=player_id) }}" hx-target="#player-{{ player_id }}"
+                hx-swap="outerHTML">
+                <select name="device_id" required>
+                    <option value="" selected disabled>Choose device…</option>
+                    {% for device in available_devices %}
+                    <option value="{{ device.id }}" {% if add_device_form and
+                        (add_device_form.device_id|string)==(device.id|string) %}selected{% endif %}>{{ device.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if add_device_errors and add_device_errors.device_id %}
+                <p class="error">{{ add_device_errors.device_id }}</p>
+                {% endif %}
+                <button type="submit" class="btn btn--success" aria-label="Add device">
+                    <img class="button-icon" src="{{ url_for('static', path='icons/check-solid-full.svg') }}" alt=""
+                        aria-hidden="true">
+                </button>
+
+                <label for="player-{{ player_id }}-add-device-toggle" class="btn btn--danger"
+                    aria-label="Cancel add device">
+                    <img class="button-icon" src="{{ url_for('static', path='icons/x-solid-full.svg') }}" alt=""
+                        aria-hidden="true">
+                </label>
+            </form>
+        </div>
+
+        <div id="player-{{ player_id }}-devices" class="player-device-list">
+            {% for device in player.devices %}
+            {% set remove_action = url_for('remove_device_from_player', player_id=player_id, device_id=device.id) %}
+            {% include "partials/player_device_row.html" with context %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </td>
+
+    {% include "partials/player_actions.html" with context %}
+</tr>

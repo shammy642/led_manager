@@ -1,0 +1,31 @@
+<script>
+(function () {
+    const row = document.getElementById('receiver-{{ receiver_id }}');
+    if (!row) {
+        return;
+    }
+
+    const updateForm = row.querySelector('#update-{{ receiver_id }}');
+    const updateButton = updateForm ? updateForm.querySelector('button[type="submit"]') : null;
+    if (!updateForm || !updateButton) {
+        return;
+    }
+
+    const trackedFields = row.querySelectorAll(
+        'input[form="update-{{ receiver_id }}"], select[form="update-{{ receiver_id }}"]'
+    );
+    const initialValues = Array.from(trackedFields, (field) => field.value);
+
+    const toggleButtonState = () => {
+        const hasChanges = Array.from(trackedFields).some((field, index) => field.value !== initialValues[index]);
+        updateButton.disabled = !hasChanges;
+    };
+
+    toggleButtonState();
+
+    trackedFields.forEach((field) => {
+        field.addEventListener('input', toggleButtonState);
+        field.addEventListener('change', toggleButtonState);
+    });
+})();
+</script>

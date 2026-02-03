@@ -1,0 +1,18 @@
+<td>
+    <input type="text" 
+           name="ip_address" 
+           placeholder="{% if mode == 'new' %}IP Address{% endif %}"
+           value="{{ receiver.ip_address if receiver else (create_form.ip_address if create_form else '') }}" 
+           {% if mode == 'view' %}disabled{% endif %}
+           form="{{ form_id }}" 
+           required>
+    {% if mode == 'new' and create_errors and create_errors.ip_address %}
+        <p class="error">{{ create_errors.ip_address }}</p>
+    {% elif mode == 'edit' and update_errors and receiver_id in update_errors %}
+        <ul class="error-messages">
+            {% for message in update_errors[receiver_id] if message %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</td>

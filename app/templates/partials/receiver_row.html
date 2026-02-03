@@ -1,0 +1,20 @@
+{% if create_success is defined and create_success %}
+<div class="success-banner">
+    <p>{{ create_success }}</p>
+</div>
+{% endif %}
+
+{% set receiver_id = receiver.id if receiver else 'new' %}
+{% set form_id = 'update-' + (receiver.id|string) if receiver else 'new-receiver-form' %}
+
+<tr id="receiver-{{ receiver_id }}" class="receiver-row receiver-row--{{ mode }}">
+    {% include "partials/receiver_field_name.html" with context %}
+    {% include "partials/receiver_field_device.html" with context %}
+    {% include "partials/receiver_field_ip.html" with context %}
+    {% include "partials/receiver_field_mac.html" with context %}
+    {% include "partials/receiver_actions.html" with context %}
+</tr>
+
+{% if mode == 'edit' %}
+    {% include "partials/form_script.html" with context %}
+{% endif %}

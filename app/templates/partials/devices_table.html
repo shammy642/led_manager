@@ -1,0 +1,17 @@
+<table class="devices-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="devices-table-contents">
+        {% if devices %}
+            {% for device in devices %}
+                {% with mode='view' %}
+                    {% include 'partials/device_row.html' %}
+                {% endwith %}
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table>

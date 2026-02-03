@@ -1,0 +1,37 @@
+<td class="actions">
+    <div class="actions-inner">
+    {% if mode == 'view' %}
+        {# View mode: Edit button #}
+        <form id="edit-button-{{ receiver_id }}" hx-post="{{ url_for('edit_receiver_button', receiver_id=receiver_id) }}" hx-target="#receiver-{{ receiver_id }}" hx-swap="outerHTML">
+            <button type="submit" class="btn">Edit</button>
+        </form>
+    {% elif mode == 'edit' %}
+        {# Edit mode: Save and Cancel #}
+        <form id="update-{{ receiver_id }}" method="post" action="{{ url_for('update_receiver', receiver_id=receiver_id) }}">
+            <button type="submit" class="btn btn--success" disabled aria-label="Save changes">
+                <img class="button-icon" src="{{ url_for('static', path='icons/check-solid-full.svg') }}" alt="" aria-hidden="true">
+            </button>
+        </form>
+        <form id="cancel-{{ receiver_id }}" hx-post="{{ url_for('cancel_receiver_button', receiver_id=receiver_id) }}" hx-target="#receiver-{{ receiver_id }}" hx-swap="outerHTML">
+            <button type="submit" class="btn btn--danger" aria-label="Cancel edit">
+                <img class="button-icon" src="{{ url_for('static', path='icons/x-solid-full.svg') }}" alt="" aria-hidden="true">
+            </button>
+        </form>
+        <form class="inline-form" method="post" action="{{ url_for('delete_receiver', receiver_id=receiver_id) }}" onsubmit="return confirm('Are you sure you want to delete {{ receiver_name }}?');">
+            <button type="submit" class="btn btn--danger" aria-label="Delete receiver">
+                <img class="button-icon" src="{{ url_for('static', path='icons/trash-solid-full.svg') }}" alt="" aria-hidden="true">
+            </button>
+        </form>
+    {% else %}
+        {# New mode: Add and Cancel #}
+        <form id="new-receiver-form" class="create-form" hx-post="{{ url_for('create_receiver') }}" hx-target="body" hx-swap="outerHTML">
+            <button type="submit" class="btn btn--success">Add</button>
+        </form>
+        <form id="cancel-new-receiver" hx-on="submit: event.preventDefault(); document.querySelector('#add-receiver-button').disabled = false; this.closest('tr').remove();">
+            <button type="submit" class="btn btn--danger" aria-label="Cancel edit">
+            <img class="button-icon" src="{{ url_for('static', path='icons/x-solid-full.svg') }}" alt="" aria-hidden="true">
+            </button>
+        </form>
+    {% endif %}
+    </div>
+</td>

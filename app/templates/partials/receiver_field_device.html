@@ -1,0 +1,34 @@
+<td>
+    {% set selected_device_id = receiver.device_id if receiver else (create_form.device_id if create_form else None) %}
+    {% if mode == 'view' %}
+        {% if receiver and receiver.device_id %}
+            {% set ns = namespace(name='') %}
+            {% for device in devices %}
+                {% if device.id == receiver.device_id %}
+                    {% set ns.name = device.name %}
+                {% endif %}
+            {% endfor %}
+            {{ ns.name if ns.name else 'Unassigned' }}
+        {% else %}
+            Unassigned
+        {% endif %}
+    {% else %}
+        <select name="device_id" form="{{ form_id }}" {% if mode == 'view' %}disabled{% endif %}>
+            <option value="">Unassigned</option>
+            {% for device in devices %}
+                <option value="{{ device.id }}" {% if selected_device_id is not none and (selected_device_id|string) == (device.id|string) %}selected{% endif %}>
+                    {{ device.name }}
+                </option>
+            {% endfor %}
+        </select>
+    {% endif %}
+    {% if mode == 'new' and create_errors and create_errors.device_id %}
+        <p class="error">{{ create_errors.device_id }}</p>
+    {% elif mode == 'edit' and update_errors and receiver_id in update_errors %}
+        <ul class="error-messages">
+            {% for message in update_errors[receiver_id] if message %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</td>

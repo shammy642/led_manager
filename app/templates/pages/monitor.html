@@ -1,0 +1,305 @@
+{% set monitoring_active = monitoring_active | default(false) %}
+
+<section id="monitor-section" class="devices-section{% if monitoring_active %} monitoring-active{% endif %}">
+    <div class="section-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <h2>Monitor</h2>
+            {% include 'buttons/monitor_toggle_button.html' %}
+        </div>
+        <div id="add-new-player-button-container">
+            {% include 'buttons/add_player_button.html' %}
+        </div>
+    </div>
+
+    <div class="monitor-table-wrapper">
+        <table class="monitor-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Devices</th>
+                <th class="monitor-actions-col">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="players-table-contents">
+            {% for player in players %}
+                {% with mode='edit' %}
+                    {% include 'partials/player_row.html' %}
+                {% endwith %}
+            {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</section>
+
+<script>
+    (function () {
+        const controlWsUrl = "{{ url_for('monitor_control_ws') }}".replace(/^http/, 'ws');
+        const pingWsUrl = "{{ url_for('monitor_pings_ws') }}".replace(/^http/, 'ws');
+        const monitorToggleUrl = "{{ url_for('read_monitor_toggle') }}";
+
+        /** @type {WebSocket | null} */
+        let controlWs = null;
+        /** @type {WebSocket | null} */
+        let ws = null;
+
+        /**
+         * Source of truth for monitoring state.
+         * We can't rely on the DOM (data-monitoring) during swaps/races.
+         */
+        let monitoringActive = false;
+
+        let allowReconnect = true;
+        let controlReconnectDelayMs = 500;
+        let pingReconnectDelayMs = 500;
+
+        function readMonitoringActiveFromDom() {
+            const toggle = document.getElementById('monitor-toggle');
+            if (!toggle) {
+                return false;
+            }
+            return toggle.dataset.monitoring === 'true';
+        }
+
+        async function refreshMonitorToggle() {
+            const existing = document.getElementById('monitor-toggle');
+            if (!existing) {
+                return;
+            }
+            try {
+                const res = await fetch(monitorToggleUrl, { headers: { 'HX-Request': 'true' } });
+                if (!res.ok) {
+                    return;
+                }
+                const html = await res.text();
+                existing.outerHTML = html;
+
+				// If we swapped HTML ourselves, HTMX needs to process the new node
+				// so hx-* attributes (e.g. Start/Stop) become active.
+				const replaced = document.getElementById('monitor-toggle');
+				if (replaced) {
+					monitoringActive = replaced.dataset.monitoring === 'true';
+				}
+				if (replaced && window.htmx && typeof window.htmx.process === 'function') {
+					window.htmx.process(replaced);
+				}
+            } catch {
+                // ignore
+            }
+        }
+
+        function connectControl() {
+            if (controlWs && (controlWs.readyState === WebSocket.OPEN || controlWs.readyState === WebSocket.CONNECTING)) {
+                return;
+            }
+
+            controlWs = new WebSocket(controlWsUrl);
+            controlWs.onmessage = (event) => {
+                let msg;
+                try {
+                    msg = JSON.parse(event.data);
+                } catch {
+                    return;
+                }
+
+				if (!msg || !msg.type) {
+					return;
+				}
+				if (msg.type === 'reload') {
+					location.reload();
+					return;
+				}
+				if (msg.type === 'monitoring') {
+					const active = msg.active === true;
+                    // Update the global toggle UI to match server state.
+                    setMonitoringActive(active);
+					refreshMonitorToggle();
+				}
+            };
+            controlWs.onclose = () => {
+                controlWs = null;
+                if (!allowReconnect) {
+                    return;
+                }
+                const delay = controlReconnectDelayMs;
+                controlReconnectDelayMs = Math.min(controlReconnectDelayMs * 2, 10_000);
+                setTimeout(() => {
+                    // If monitoring state changed while we were disconnected, this will
+                    // re-sync via the initial server 'monitoring' message.
+                    connectControl();
+                }, delay);
+            };
+            controlWs.onopen = () => {
+                controlReconnectDelayMs = 500;
+            };
+        }
+
+        function applyLatencyClass(el, rttMs) {
+            el.classList.remove('receiver-latency--good', 'receiver-latency--warn', 'receiver-latency--bad');
+            if (rttMs < 20) {
+                el.classList.add('receiver-latency--good');
+            } else if (rttMs <= 50) {
+                el.classList.add('receiver-latency--warn');
+            } else {
+                el.classList.add('receiver-latency--bad');
+            }
+        }
+
+        function handleMessage(event) {
+            let msg;
+            try {
+                msg = JSON.parse(event.data);
+            } catch {
+                return;
+            }
+
+            if (!msg.results || !Array.isArray(msg.results)) {
+                return;
+            }
+
+            for (const result of msg.results) {
+                const el = document.getElementById(`receiver-latency-${result.receiver_id}`);
+                if (!el) {
+                    continue;
+                }
+
+                if (result.status === 'ok' && result.rtt_ms !== null && result.rtt_ms !== undefined) {
+                    const rttMs = Number(result.rtt_ms);
+                    el.textContent = ` ${rttMs.toFixed(1)}ms`;
+                    applyLatencyClass(el, rttMs);
+                } else if (result.status === 'timeout') {
+                    el.textContent = ' timeout';
+                    el.classList.remove('receiver-latency--good', 'receiver-latency--warn');
+                    el.classList.add('receiver-latency--bad');
+                } else {
+                    el.textContent = ' error';
+                    el.classList.remove('receiver-latency--good', 'receiver-latency--warn', 'receiver-latency--bad');
+                }
+            }
+
+        }
+
+        function connect() {
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+                return;
+            }
+            ws = new WebSocket(pingWsUrl);
+            ws.onmessage = handleMessage;
+            ws.onclose = () => {
+                ws = null;
+                if (!allowReconnect) {
+                    return;
+                }
+                if (!readMonitoringActive()) {
+                    return;
+                }
+                const delay = pingReconnectDelayMs;
+                pingReconnectDelayMs = Math.min(pingReconnectDelayMs * 2, 10_000);
+                setTimeout(() => {
+                    connect();
+                }, delay);
+            };
+            ws.onopen = () => {
+                pingReconnectDelayMs = 500;
+            };
+        }
+
+        function disconnect() {
+            if (!ws) {
+                return;
+            }
+            try {
+                ws.close();
+            } catch {
+                // ignore
+            }
+            ws = null;
+        }
+
+        function disconnectControl() {
+            if (!controlWs) {
+                return;
+            }
+            try {
+                controlWs.close();
+            } catch {
+                // ignore
+            }
+            controlWs = null;
+        }
+
+        function setLatencyVisible(active) {
+            const monitorSection = document.getElementById('monitor-section');
+            if (!monitorSection) {
+                return;
+            }
+
+            const latencyEls = monitorSection.querySelectorAll('.receiver-latency');
+            for (const el of latencyEls) {
+                if (active) {
+                    el.removeAttribute('hidden');
+                } else {
+                    el.setAttribute('hidden', '');
+                    el.textContent = '—';
+                    el.classList.remove('receiver-latency--good', 'receiver-latency--warn', 'receiver-latency--bad');
+                }
+            }
+        }
+
+        function readMonitoringActive() {
+            return monitoringActive;
+        }
+
+        function setMonitoringActive(active) {
+            monitoringActive = active;
+
+            const toggle = document.getElementById('monitor-toggle');
+            if (toggle) {
+                toggle.dataset.monitoring = active ? 'true' : 'false';
+            }
+
+            const monitorSection = document.getElementById('monitor-section');
+            if (monitorSection) {
+                monitorSection.classList.toggle('monitoring-active', active);
+
+                setLatencyVisible(active);
+
+                const controls = monitorSection.querySelectorAll('input, select, button, textarea');
+                for (const el of controls) {
+                    if (el.closest('#monitor-toggle')) {
+                        continue;
+                    }
+
+                    // Keep websocket monitor mode strictly read-only.
+                    if (active) {
+                        el.setAttribute('disabled', '');
+                    } else {
+                        el.removeAttribute('disabled');
+                    }
+                }
+            }
+            if (active) {
+                connect();
+            } else {
+                disconnect();
+            }
+        }
+
+        connectControl();
+    monitoringActive = readMonitoringActiveFromDom();
+    setMonitoringActive(monitoringActive);
+
+        window.addEventListener('beforeunload', () => {
+            allowReconnect = false;
+            disconnect();
+            disconnectControl();
+        });
+
+        document.body.addEventListener('htmx:afterSwap', (event) => {
+            const target = event?.detail?.target;
+            if (target && target.id === 'monitor-toggle') {
+				monitoringActive = target.dataset.monitoring === 'true';
+                setMonitoringActive(monitoringActive);
+            }
+        });
+    })();
+</script>

@@ -1,0 +1,18 @@
+<td>
+    <input type="text" 
+           name="name" 
+           placeholder="{% if mode == 'new' %}Name{% endif %}"
+           value="{{ device.name if device else (create_form.name if create_form else '') }}" 
+           {% if mode == 'view' %}disabled{% endif %}
+           form="{{ form_id }}" 
+           required>
+    {% if mode == 'new' and create_errors and create_errors.name %}
+        <p class="error">{{ create_errors.name }}</p>
+    {% elif mode == 'edit' and update_errors and device_id in update_errors %}
+        <ul class="error-messages">
+            {% for message in update_errors[device_id] if message %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</td>

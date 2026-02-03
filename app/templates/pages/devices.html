@@ -1,0 +1,21 @@
+<section id="devices-section" class="devices-section">
+    <div class="section-header">
+        <h2>Devices</h2>
+        <nav>
+            <span>Sort:</span>
+            {% if devices_sort == 'name' %}
+                <a href="{{ url_for('read_devices') }}?sort=newest">Newest</a>
+                <strong>Name</strong>
+            {% else %}
+                <strong>Newest</strong>
+                <a href="{{ url_for('read_devices') }}?sort=name">Name</a>
+            {% endif %}
+        </nav>
+        <div id="add-new-device-button-container">
+            {% include 'buttons/add_device_button.html' %}
+        </div>
+    </div>
+    <div id="devices-table">
+        {% include 'partials/devices_table.html' %}
+    </div>
+</section>

@@ -1,0 +1,13 @@
+<div id="monitor-toggle" data-monitoring="{{ 'true' if monitoring_active else 'false' }}">
+    {% if monitoring_active %}
+    <button id="monitor-stop-button" class="btn btn--danger" hx-post="{{ url_for('stop_monitoring') }}" hx-target="#monitor-toggle"
+        hx-swap="none">
+        Stop Monitoring
+    </button>
+    {% else %}
+    <button id="monitor-start-button" class="btn btn--success" hx-post="{{ url_for('start_monitoring') }}" hx-target="#monitor-toggle"
+        hx-swap="none">
+        Start Monitoring
+    </button>
+    {% endif %}
+</div>

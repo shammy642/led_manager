@@ -1,0 +1,13 @@
+{
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "chat.tools.terminal.autoApprove": {
+        "/^cd \"/Users/samuelhoile/Documents/Visual Studio Code Projects/ip_address_manager\" && perl -e 'alarm shift; exec @ARGV' 60 poetry run pytest -q tests/routes/test_monitor_ws_routes\\.py$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

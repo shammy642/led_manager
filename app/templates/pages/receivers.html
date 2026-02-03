@@ -1,0 +1,31 @@
+<section id="receivers-section" class="receivers-section">
+    <div class="section-header">
+        <h2>Reserved Receivers</h2>
+        <nav>
+            <span>Sort:</span>
+            {% set current_sort = receivers_sort if receivers_sort is defined else 'newest' %}
+            {% if current_sort == 'newest' %}<strong>Newest</strong>{% else %}<a href="{{ url_for('read_receivers') }}?sort=newest">Newest</a>{% endif %}
+            {% if current_sort == 'name' %}<strong>Name</strong>{% else %}<a href="{{ url_for('read_receivers') }}?sort=name">Name</a>{% endif %}
+            {% if current_sort == 'device' %}<strong>Device</strong>{% else %}<a href="{{ url_for('read_receivers') }}?sort=device">Device</a>{% endif %}
+            {% if current_sort == 'ip' %}<strong>IP</strong>{% else %}<a href="{{ url_for('read_receivers') }}?sort=ip">IP</a>{% endif %}
+        </nav>
+        
+        <div id="add-new-receiver-button-container">
+            {% include 'buttons/add_receiver_button.html' %}
+            <button
+                type="button"
+                id="apply-changes-btn"
+                class="btn apply-changes-btn"
+                hx-post="{{ url_for('apply_receiver_changes') }}"
+                hx-target="#apply-changes-status"
+                hx-swap="innerHTML"
+            >
+                Apply Changes
+            </button>
+        </div>
+        <div id="apply-changes-status"></div>
+    </div>
+    <div id="receivers-table">
+        {% include 'partials/receivers_table.html' %}
+    </div>
+</section>

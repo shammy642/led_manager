@@ -1,0 +1,9 @@
+<td>
+    {% if mode == 'view' %}
+        {{ device.player.name if device and device.player else 'Unassigned' }}
+    {% elif mode == 'edit' %}
+        {{ device.player.name if device and device.player else 'Unassigned' }}
+    {% else %}
+        Unassigned
+    {% endif %}
+</td>

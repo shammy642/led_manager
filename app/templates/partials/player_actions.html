@@ -1,0 +1,28 @@
+<td class="actions" data-label="Actions">
+    <div class="actions-inner">
+    {% if mode == 'edit' %}
+        <label
+            for="player-{{ player_id }}-add-device-toggle"
+            class="btn btn--success player-add-device-toggle"
+            aria-controls="add-device-to-player-{{ player_id }}"
+            aria-label="Add device"
+        >
+            <span aria-hidden="true">+</span>
+        </label>
+        <form class="inline-form" method="post" action="{{ url_for('delete_player', player_id=player_id) }}" onsubmit="return confirm('Are you sure you want to delete {{ player.name }}?');">
+            <button type="submit" class="btn btn--danger" aria-label="Delete player">
+                <img class="button-icon" src="{{ url_for('static', path='icons/trash-solid-full.svg') }}" alt="" aria-hidden="true">
+            </button>
+        </form>
+    {% else %}
+        <form id="new-player-form" class="create-form" hx-post="{{ url_for('create_player') }}" hx-target="body" hx-swap="outerHTML">
+            <button type="submit" class="btn btn--success">Add</button>
+        </form>
+        <form id="cancel-new-player" hx-on="submit: event.preventDefault(); document.querySelector('#add-player-button').disabled = false; this.closest('tr').remove();">
+            <button type="submit" class="btn btn--danger" aria-label="Cancel add player">
+                <img class="button-icon" src="{{ url_for('static', path='icons/x-solid-full.svg') }}" alt="" aria-hidden="true">
+            </button>
+        </form>
+    {% endif %}
+    </div>
+</td>

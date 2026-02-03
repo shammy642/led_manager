@@ -1,0 +1,11 @@
+{% set device_id = device.id if device else 'new' %}
+{% set form_id = 'update-device-' + (device.id|string) if device else 'new-device-form' %}
+
+<tr id="device-{{ device_id }}" class="device-row device-row--{{ mode }}">
+    {% include "partials/device_field_name.html" with context %}
+    {% include "partials/device_actions.html" with context %}
+</tr>
+
+{% if mode == 'edit' %}
+    {% include "partials/device_form_script.html" with context %}
+{% endif %}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LED Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='index.css') }}">
+    <script src="{{ url_for('static', path='scripts/htmx.min.js') }}"></script>
+</head>
+
+<body>
+    <div class="header">
+        <section class="section-header receivers-section">
+            <h1>Box 9 LED Manager</h1>
+            <nav>
+                <a href="{{ url_for('read_monitor') }}">Monitor</a>
+                <a href="{{ url_for('read_devices') }}">Devices</a>
+                <a href="{{ url_for('read_receivers') }}">Receivers</a> 
+            </nav>
+            
+        </section>
+    </div>
+    {% if active_page == 'receivers' %}
+        {% include 'pages/receivers.html' %}
+    {% elif active_page == 'monitor' %}
+        {% include 'pages/monitor.html' %}
+    {% else %}
+        {% include 'pages/devices.html' %}
+    {% endif %}
+</body>
+
+</html>
