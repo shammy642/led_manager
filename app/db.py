@@ -6,10 +6,10 @@ from app.models.device import Device  # noqa: F401
 from app.models.player import Player  # noqa: F401
 from app.models.receiver import Receiver  # noqa: F401
 
-sqlite_name = "ip_address_manager"
-sqlite_url = f"postgresql+psycopg://127.0.0.1:5432/{sqlite_name}"
+sqlite_file_name = "ip_address_manager.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
 
-engine = create_engine(sqlite_url)
+engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)

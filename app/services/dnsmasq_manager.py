@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from app.utils.write_devices import write_devices
+from app.utils.write_devices import DnsmasqConfigWriter
 
 load_dotenv(override=True)
 
@@ -60,7 +60,8 @@ class DnsmasqManager:
 		self._run_command([self._systemctl_path, "restart", self._service_name])
 
 	def write_dhcp_conf(self, devices: Sequence[dict[str, str]]) -> None:
-		write_devices(devices, self._dhcp_conf_path)
+		writer = DnsmasqConfigWriter()
+		writer.write_config(devices, self._dhcp_conf_path)
 
 	def apply(self, devices: Sequence[dict[str, str]]) -> None:
 		"""Stop dnsmasq, write dhcp.conf, then start dnsmasq.

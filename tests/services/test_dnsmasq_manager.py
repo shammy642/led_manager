@@ -47,9 +47,10 @@ def test_write_dhcp_conf_delegates_to_writer(tmp_path: Path):
         ]
     )
 
-    assert conf_path.read_text(encoding="utf-8") == (
-        "A,10.0.0.1,AA:BB:CC:DD:EE:FF\nB,10.0.0.2,11:22:33:44:55:66"
-    )
+    content = conf_path.read_text(encoding="utf-8")
+    assert "dhcp-host=AA:BB:CC:DD:EE:FF,10.0.0.1,A" in content
+    assert "dhcp-host=11:22:33:44:55:66,10.0.0.2,B" in content
+    assert "interface=eth0" in content
 
 
 def test_apply_stops_writes_starts(tmp_path: Path):
@@ -63,7 +64,7 @@ def test_apply_stops_writes_starts(tmp_path: Path):
         ["systemctl", "stop", "dnsmasq"],
         ["systemctl", "start", "dnsmasq"],
     ]
-    assert "A,10.0.0.1,AA:BB:CC:DD:EE:FF" in conf_path.read_text(encoding="utf-8")
+    assert "dhcp-host=AA:BB:CC:DD:EE:FF,10.0.0.1,A" in conf_path.read_text(encoding="utf-8")
 
 
 def test_apply_raises_if_stop_fails(tmp_path: Path):
