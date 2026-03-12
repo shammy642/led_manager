@@ -141,7 +141,13 @@ def test_apply_receiver_changes_calls_dnsmasq_apply(client, session):
 	]
 
 
-def test_apply_receiver_changes_returns_error_when_unconfigured(client):
-	response = client.post("/ui/receiver/apply")
+def test_apply_receiver_changes_returns_error_when_unconfigured(client, monkeypatch):
+	def _override():
+		return None
+	app.dependency_overrides[DnsmasqManager.from_env] = _override
+	try:
+		response = client.post("/ui/receiver/apply")
+	finally:
+		app.dependency_overrides.pop(DnsmasqManager.from_env, None)
 	assert response.status_code == 200
 	assert "DNSMASQ_DHCP_CONF_PATH" in response.text

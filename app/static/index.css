@@ -55,7 +55,9 @@ th, td {
     text-align: left;
 }
 
+th.actions-col,
 td.actions {
+    width: 1%;
     white-space: nowrap;
 }
 
@@ -133,7 +135,7 @@ td.actions .btn {
     display: none;
 }
 
-.player-delete-mobile,
+form.player-delete-mobile,
 .player-devices-mobile-actions,
 .player-add-device-toggle--mobile {
     display: none;
@@ -307,6 +309,28 @@ input[type="text"]:focus {
     overflow-x: auto;
 }
 
+.monitor-table th:first-child,
+.monitor-table td[data-label="Name"] {
+    min-width: 200px;
+    max-width: 200px;
+    width: 200px;
+}
+
+.monitor-table td[data-label="Name"] input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.player-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 @media (max-width: 768px) {
     body {
         padding: 0.75rem 1rem;
@@ -377,6 +401,14 @@ input[type="text"]:focus {
         border: none;
         border-bottom: 1px solid #e2e8f0;
         padding: 0.6rem;
+        box-sizing: border-box;
+    }
+    
+    .monitor-table th:first-child,
+    .monitor-table td[data-label="Name"] {
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .monitor-table > tbody > tr > td::before {
@@ -391,7 +423,7 @@ input[type="text"]:focus {
         align-items: stretch;
     }
 
-    .monitor-table > tbody > tr > td.actions {
+    .monitor-table > tbody > tr:not(.player-row--new) > td.actions {
         display: none;
     }
 
@@ -414,13 +446,14 @@ input[type="text"]:focus {
         align-items: center;
         gap: 0.5rem;
         width: 100%;
+        box-sizing: border-box;
     }
 
     .player-name-row input[type="text"] {
         flex: 1 1 auto;
     }
 
-    .player-delete-mobile {
+    form.player-delete-mobile {
         display: inline-flex;
     }
 

@@ -10,11 +10,12 @@ receiver_buttons_router = APIRouter()
 receiver_buttons_router.prefix = "/ui/receiver"
 templates = Jinja2Templates(directory="app/templates")
 
-@receiver_buttons_router.post("/{receiver_id}/edit", response_class=HTMLResponse, name="edit_receiver_button")
+
+@receiver_buttons_router.post(
+    "/{receiver_id}/edit", response_class=HTMLResponse, name="edit_receiver_button"
+)
 def edit_receiver_button(
-    request: Request,
-    receiver_id: int,
-    session: Session = Depends(get_session)
+    request: Request, receiver_id: int, session: Session = Depends(get_session)
 ):
     receiver = receiver_crud.get_receiver(session, receiver_id)
     devices = device_crud.list_devices(session)
@@ -29,11 +30,12 @@ def edit_receiver_button(
         status_code=status.HTTP_200_OK,
     )
 
-@receiver_buttons_router.post("/{receiver_id}/cancel", response_class=HTMLResponse, name="cancel_receiver_button")
+
+@receiver_buttons_router.post(
+    "/{receiver_id}/cancel", response_class=HTMLResponse, name="cancel_receiver_button"
+)
 def cancel_receiver_button(
-    request: Request,
-    receiver_id: int,
-    session: Session = Depends(get_session)
+    request: Request, receiver_id: int, session: Session = Depends(get_session)
 ):
     receiver = receiver_crud.get_receiver(session, receiver_id)
     devices = device_crud.list_devices(session)
@@ -48,11 +50,12 @@ def cancel_receiver_button(
         status_code=status.HTTP_200_OK,
     )
 
-@receiver_buttons_router.post("/cancel", response_class=HTMLResponse, name="cancel_new_receiver")
+
+@receiver_buttons_router.post(
+    "/cancel", response_class=HTMLResponse, name="cancel_new_receiver"
+)
 def cancel_receiver_button(
-    request: Request,
-    receiver_id: int,
-    session: Session = Depends(get_session)
+    request: Request, receiver_id: int, session: Session = Depends(get_session)
 ):
     receiver = receiver_crud.get_receiver(session, receiver_id)
     devices = device_crud.list_devices(session)
@@ -66,7 +69,10 @@ def cancel_receiver_button(
         status_code=status.HTTP_200_OK,
     )
 
-@receiver_buttons_router.post("/add", response_class=HTMLResponse, name="add_receiver_button")
+
+@receiver_buttons_router.post(
+    "/add", response_class=HTMLResponse, name="add_receiver_button"
+)
 def add_receiver_button(
     request: Request,
     session: Session = Depends(get_session),
@@ -83,7 +89,9 @@ def add_receiver_button(
     )
 
 
-@receiver_buttons_router.post("/apply", response_class=HTMLResponse, name="apply_receiver_changes")
+@receiver_buttons_router.post(
+    "/apply", response_class=HTMLResponse, name="apply_receiver_changes"
+)
 def apply_receiver_changes(
     request: Request,
     session: Session = Depends(get_session),
@@ -102,7 +110,11 @@ def apply_receiver_changes(
 
     receivers = receiver_crud.list_receivers(session, sort="name")
     reservations = [
-        {"name": receiver.name, "ip_address": receiver.ip_address, "mac_address": receiver.mac_address}
+        {
+            "name": receiver.name,
+            "ip_address": receiver.ip_address,
+            "mac_address": receiver.mac_address,
+        }
         for receiver in receivers
     ]
 
@@ -134,7 +146,7 @@ def apply_receiver_changes(
         {
             "request": request,
             "status": "success",
-            "message": f"Applied {len(reservations)} reservations.",
+            "message": f"Applied {len(reservations)} reservations. Power cycle the WiFi access point and devices for changes to take effect",
         },
         status_code=status.HTTP_200_OK,
     )

@@ -1,4 +1,15 @@
+import re
 from pydantic import ValidationError
+
+
+def to_snake_case(text: str) -> str:
+    """
+    Remove all special characters, strip the output, and turn it into snake_case.
+    """
+    # Remove special characters (keeping alphanumerics and whitespace/hyphens for word boundaries)
+    clean_text = re.sub(r'[^\w\s-]', '', text)
+    # Strip, replace spaces/hyphens with underscores, and make lowercase
+    return re.sub(r'[-\s]+', '_', clean_text.strip()).lower()
 
 
 def format_validation_errors(exc: ValidationError) -> dict[str, str]:
@@ -11,3 +22,4 @@ def format_validation_errors(exc: ValidationError) -> dict[str, str]:
         else:
             messages["root"] = error["msg"]
     return messages 
+

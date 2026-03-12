@@ -5,9 +5,13 @@ from sqlmodel import Session, SQLModel, create_engine
 from app.models.device import Device  # noqa: F401
 from app.models.player import Player  # noqa: F401
 from app.models.receiver import Receiver  # noqa: F401
+from dotenv import load_dotenv
+import os
 
-sqlite_file_name = "ip_address_manager.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+load_dotenv()
+
+db_location = os.getenv("DB_LOCATION", "./ip_manager.db")
+sqlite_url = f"sqlite:///{db_location}"
 
 engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
 

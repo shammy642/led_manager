@@ -12,16 +12,14 @@
                 value="{{ player.name if player else (create_form.name if create_form else '') }}"
                 hx-post="{{ url_for('update_player', player_id=player_id) }}" hx-trigger="input changed delay:2s"
                 hx-target="#player-{{ player_id }}" hx-swap="outerHTML" form="{{ form_id }}" required>
-            <div class="hidden">
-                <form class="inline-form player-delete-mobile" method="post"
-                    action="{{ url_for('delete_player', player_id=player_id) }}"
-                    onsubmit="return confirm('Are you sure you want to delete {{ player.name }}?');">
-                    <button type="submit" class="btn btn--danger" aria-label="Delete player">
-                        <img class="button-icon" src="{{ url_for('static', path='icons/trash-solid-full.svg') }}" alt=""
-                            aria-hidden="true">
-                    </button>
-                </form>
-            </div>
+            <form class="inline-form player-delete-mobile" method="post"
+                action="{{ url_for('delete_player', player_id=player_id) }}"
+                onsubmit="return confirm('Are you sure you want to delete {{ player.name }}?');">
+                <button type="submit" class="btn btn--danger" aria-label="Delete player">
+                    <img class="button-icon" src="{{ url_for('static', path='icons/trash-solid-full.svg') }}" alt=""
+                        aria-hidden="true">
+                </button>
+            </form>
         </div>
         {% else %}
         <input type="text" name="name" placeholder="{% if mode == 'new' %}Name{% endif %}"
