@@ -22,7 +22,7 @@ class SubprocessIcmpPingProbe:
     """
 
     _windows_rtt = re.compile(r"time[=<]\s*([0-9]+)\s*ms", re.IGNORECASE)
-    _posix_rtt = re.compile(r"time[=<]?\s*([0-9]+(?:\.[0-9]+)?)\s*ms", re.IGNORECASE)
+    _posix_rtt = re.compile(r"time[=<]\s*([0-9]+(?:\.[0-9]+)?)\s*ms", re.IGNORECASE)
 
     def _build_command(self, ip_address: str, *, timeout_seconds: float) -> list[str]:
         if sys.platform.startswith("win"):
