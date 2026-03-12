@@ -80,6 +80,16 @@ def test_receiver_rejects_invalid_ip_address():
 			}
 		)
 
+def test_receiver_rejects_reserved_ip_address():
+	with pytest.raises(ValidationError):
+		Receiver.model_validate(
+			{
+				"name": "Invalid Device",
+				"ip_address": "192.168.1.1",
+				"mac_address": "AA:BB:CC:DD:EE:FF",
+			}
+		)
+
 
 def test_receiver_rejects_invalid_mac_address():
 	with pytest.raises(ValidationError):

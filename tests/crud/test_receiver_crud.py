@@ -139,13 +139,19 @@ def test_list_receivers_can_sort_by_ip(session):
 	)
 	create_receiver(
 		session,
+		name="C",
+		ip_address="10.0.0.15",
+		mac_address="00:00:00:00:00:15",
+	)
+	create_receiver(
+		session,
 		name="A",
 		ip_address="10.0.0.1",
 		mac_address="00:00:00:00:00:11",
 	)
 
 	result = list_receivers(session, sort="ip")
-	assert [receiver.ip_address for receiver in result] == ["10.0.0.1", "10.0.0.2"]
+	assert [receiver.ip_address for receiver in result] == ["10.0.0.1", "10.0.0.2", "10.0.0.15"]
 
 
 def test_list_receivers_can_sort_by_device_name(session):
@@ -311,7 +317,7 @@ def test_create_receiver_duplicate_name_raises_conflict(session):
 	create_receiver(
 		session,
 		name="Switch",
-		ip_address="192.168.1.1",
+		ip_address="192.168.1.25",
 		mac_address="AA:AA:AA:AA:AA:AA",
 	)
 

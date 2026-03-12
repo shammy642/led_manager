@@ -96,10 +96,16 @@ def list_receivers(
 ) -> Sequence[Receiver]:
 	statement = select(Receiver)
 	resolved_sort = sort.value if isinstance(sort, ReceiverSort) else sort
+	
+	if resolved_sort == "ip":
+		# IP sorting is best done in Python because SQLite has no native network address type
+		results = session.exec(statement).all()
+		import ipaddress
+		results.sort(key=lambda r: (ipaddress.ip_address(r.ip_address), -r.id if r.id is not None else 0))
+		return results[skip : skip + limit]
+
 	if resolved_sort == "name":
 		statement = statement.order_by(Receiver.name.asc(), Receiver.id.desc())
-	elif resolved_sort == "ip":
-		statement = statement.order_by(Receiver.ip_address.asc(), Receiver.id.desc())
 	elif resolved_sort == "device":
 		statement = (
 			statement.outerjoin(Device, Receiver.device_id == Device.id)

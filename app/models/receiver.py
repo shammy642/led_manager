@@ -25,7 +25,10 @@ class Receiver(SQLModel, table=True):
     @field_validator("ip_address", mode="before")
     @classmethod
     def _validate_ip_address(cls, value: str) -> str:
-        return str(ip_address(value))
+        ip = str(ip_address(value))
+        if ip == "192.168.1.1":
+            raise ValueError("IP address 192.168.1.1 is reserved.")
+        return ip
 
     @field_validator("mac_address", mode="before")
     @classmethod
