@@ -48,6 +48,16 @@ class UpdateManager:
             wifi_on_wait_seconds = float(raw_wifi_on)
         except ValueError:
             wifi_on_wait_seconds = 3.0
+        raw_retry_count = os.getenv("UPDATE_RESCAN_RETRY_COUNT", "3")
+        try:
+            rescan_retry_count = int(raw_retry_count)
+        except ValueError:
+            rescan_retry_count = 3
+        raw_retry_wait = os.getenv("UPDATE_RESCAN_RETRY_WAIT_SECONDS", "2.0")
+        try:
+            rescan_retry_wait_seconds = float(raw_retry_wait)
+        except ValueError:
+            rescan_retry_wait_seconds = 2.0
         return cls(
             nmcli_path=os.getenv("UPDATE_NMCLI_PATH", "nmcli"),
             git_path=os.getenv("UPDATE_GIT_PATH", "git"),
@@ -56,6 +66,8 @@ class UpdateManager:
             systemctl_path=os.getenv("UPDATE_SYSTEMCTL_PATH", "systemctl"),
             rescan_wait_seconds=rescan_wait_seconds,
             wifi_on_wait_seconds=wifi_on_wait_seconds,
+            rescan_retry_count=rescan_retry_count,
+            rescan_retry_wait_seconds=rescan_retry_wait_seconds,
         )
 
     def __init__(
@@ -68,6 +80,8 @@ class UpdateManager:
         systemctl_path: str = "systemctl",
         rescan_wait_seconds: float = 5.0,
         wifi_on_wait_seconds: float = 3.0,
+        rescan_retry_count: int = 3,
+        rescan_retry_wait_seconds: float = 2.0,
         command_runner: OutputCommandRunner | None = None,
     ) -> None:
         self._nmcli_path = nmcli_path
@@ -77,6 +91,8 @@ class UpdateManager:
         self._systemctl_path = systemctl_path
         self._rescan_wait_seconds = rescan_wait_seconds
         self._wifi_on_wait_seconds = wifi_on_wait_seconds
+        self._rescan_retry_count = rescan_retry_count
+        self._rescan_retry_wait_seconds = rescan_retry_wait_seconds
         self._run = command_runner or _default_command_runner
 
     def _run_step(self, step: str, command: Sequence[str]) -> UpdateStepResult:
@@ -94,10 +110,15 @@ class UpdateManager:
         return result
 
     def rescan_wifi(self) -> UpdateStepResult:
-        result = self._run_step("wifi_rescan", [self._nmcli_path, "dev", "wifi", "rescan"])
-        if result.success:
-            time.sleep(self._rescan_wait_seconds)
-        return result
+        last_result: UpdateStepResult | None = None
+        for attempt in range(1 + self._rescan_retry_count):
+            if attempt > 0:
+                time.sleep(self._rescan_retry_wait_seconds)
+            last_result = self._run_step("wifi_rescan", [self._nmcli_path, "dev", "wifi", "rescan"])
+            if last_result.success:
+                time.sleep(self._rescan_wait_seconds)
+                return last_result
+        return last_result  # type: ignore[return-value]
 
     def connect_wifi(self, ssid: str, password: str) -> UpdateStepResult:
         # Remove any pre-existing incomplete profile for this SSID — a stale
