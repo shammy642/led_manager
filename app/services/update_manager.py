@@ -38,11 +38,16 @@ def _default_command_runner(command: Sequence[str]) -> subprocess.CompletedProce
 class UpdateManager:
     @classmethod
     def from_env(cls) -> "UpdateManager":
-        raw_wait = os.getenv("UPDATE_RESCAN_WAIT_SECONDS", "5.0")
+        raw_rescan = os.getenv("UPDATE_RESCAN_WAIT_SECONDS", "5.0")
         try:
-            rescan_wait_seconds = float(raw_wait)
+            rescan_wait_seconds = float(raw_rescan)
         except ValueError:
             rescan_wait_seconds = 5.0
+        raw_wifi_on = os.getenv("UPDATE_WIFI_ON_WAIT_SECONDS", "3.0")
+        try:
+            wifi_on_wait_seconds = float(raw_wifi_on)
+        except ValueError:
+            wifi_on_wait_seconds = 3.0
         return cls(
             nmcli_path=os.getenv("UPDATE_NMCLI_PATH", "nmcli"),
             git_path=os.getenv("UPDATE_GIT_PATH", "git"),
@@ -50,6 +55,7 @@ class UpdateManager:
             service_name=os.getenv("UPDATE_SERVICE_NAME", ""),
             systemctl_path=os.getenv("UPDATE_SYSTEMCTL_PATH", "systemctl"),
             rescan_wait_seconds=rescan_wait_seconds,
+            wifi_on_wait_seconds=wifi_on_wait_seconds,
         )
 
     def __init__(
@@ -61,6 +67,7 @@ class UpdateManager:
         service_name: str = "",
         systemctl_path: str = "systemctl",
         rescan_wait_seconds: float = 5.0,
+        wifi_on_wait_seconds: float = 3.0,
         command_runner: OutputCommandRunner | None = None,
     ) -> None:
         self._nmcli_path = nmcli_path
@@ -69,6 +76,7 @@ class UpdateManager:
         self._service_name = service_name
         self._systemctl_path = systemctl_path
         self._rescan_wait_seconds = rescan_wait_seconds
+        self._wifi_on_wait_seconds = wifi_on_wait_seconds
         self._run = command_runner or _default_command_runner
 
     def _run_step(self, step: str, command: Sequence[str]) -> UpdateStepResult:
@@ -80,7 +88,10 @@ class UpdateManager:
             return UpdateStepResult(step=step, success=False, output=str(exc))
 
     def enable_wifi(self) -> UpdateStepResult:
-        return self._run_step("wifi_on", [self._nmcli_path, "radio", "wifi", "on"])
+        result = self._run_step("wifi_on", [self._nmcli_path, "radio", "wifi", "on"])
+        if result.success:
+            time.sleep(self._wifi_on_wait_seconds)
+        return result
 
     def rescan_wifi(self) -> UpdateStepResult:
         result = self._run_step("wifi_rescan", [self._nmcli_path, "dev", "wifi", "rescan"])

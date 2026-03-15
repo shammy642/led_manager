@@ -23,6 +23,7 @@ def _manager(runner) -> UpdateManager:
         service_name="myapp",
         systemctl_path="systemctl",
         rescan_wait_seconds=0,
+        wifi_on_wait_seconds=0,
         command_runner=runner,
     )
 
@@ -46,6 +47,22 @@ def test_enable_wifi_failure():
     assert result.step == "wifi_on"
     assert result.success is False
     assert "radio disabled" in result.output
+
+
+def test_enable_wifi_waits_on_success():
+    import time
+    m = UpdateManager(wifi_on_wait_seconds=0.05, command_runner=lambda _: _ok())
+    start = time.monotonic()
+    m.enable_wifi()
+    assert time.monotonic() - start >= 0.05
+
+
+def test_enable_wifi_does_not_wait_on_failure():
+    import time
+    m = UpdateManager(wifi_on_wait_seconds=10, command_runner=lambda _: _fail())
+    start = time.monotonic()
+    m.enable_wifi()
+    assert time.monotonic() - start < 1
 
 
 def test_connect_wifi_success():
@@ -250,7 +267,7 @@ def test_restart_service_calls_systemctl():
 # ---------------------------------------------------------------------------
 
 def test_from_env_defaults(monkeypatch):
-    for key in ("UPDATE_NMCLI_PATH", "UPDATE_GIT_PATH", "UPDATE_REPO_PATH", "UPDATE_SERVICE_NAME", "UPDATE_SYSTEMCTL_PATH", "UPDATE_RESCAN_WAIT_SECONDS"):
+    for key in ("UPDATE_NMCLI_PATH", "UPDATE_GIT_PATH", "UPDATE_REPO_PATH", "UPDATE_SERVICE_NAME", "UPDATE_SYSTEMCTL_PATH", "UPDATE_RESCAN_WAIT_SECONDS", "UPDATE_WIFI_ON_WAIT_SECONDS"):
         monkeypatch.delenv(key, raising=False)
 
     m = UpdateManager.from_env()
@@ -260,6 +277,7 @@ def test_from_env_defaults(monkeypatch):
     assert m._systemctl_path == "systemctl"
     assert m._repo_path == Path.cwd()
     assert m._rescan_wait_seconds == 5.0
+    assert m._wifi_on_wait_seconds == 3.0
 
 
 def test_from_env_custom(monkeypatch, tmp_path):
@@ -269,6 +287,7 @@ def test_from_env_custom(monkeypatch, tmp_path):
     monkeypatch.setenv("UPDATE_SERVICE_NAME", "led-manager")
     monkeypatch.setenv("UPDATE_SYSTEMCTL_PATH", "/bin/systemctl")
     monkeypatch.setenv("UPDATE_RESCAN_WAIT_SECONDS", "3.5")
+    monkeypatch.setenv("UPDATE_WIFI_ON_WAIT_SECONDS", "2.5")
 
     m = UpdateManager.from_env()
     assert m._nmcli_path == "/usr/bin/nmcli"
@@ -277,12 +296,19 @@ def test_from_env_custom(monkeypatch, tmp_path):
     assert m._service_name == "led-manager"
     assert m._systemctl_path == "/bin/systemctl"
     assert m._rescan_wait_seconds == 3.5
+    assert m._wifi_on_wait_seconds == 2.5
 
 
 def test_from_env_invalid_rescan_wait_falls_back_to_default(monkeypatch):
     monkeypatch.setenv("UPDATE_RESCAN_WAIT_SECONDS", "not-a-number")
     m = UpdateManager.from_env()
     assert m._rescan_wait_seconds == 5.0
+
+
+def test_from_env_invalid_wifi_on_wait_falls_back_to_default(monkeypatch):
+    monkeypatch.setenv("UPDATE_WIFI_ON_WAIT_SECONDS", "not-a-number")
+    m = UpdateManager.from_env()
+    assert m._wifi_on_wait_seconds == 3.0
 
 
 # ---------------------------------------------------------------------------

@@ -12,7 +12,7 @@ Player  →  Device  →  Receiver
 |--------|-------------|
 | **Player** | Top-level grouping (e.g. a video player) |
 | **Device** | A logical device belonging to a player |
-| **Receiver** | An LED receiver with a unique name, IP address, and MAC address |
+| **Receiver** | An networked receiver or device with a unique name, IP address, and MAC address |
 
 ## Features
 
