@@ -89,6 +89,9 @@ class UpdateManager:
         return result
 
     def connect_wifi(self, ssid: str, password: str) -> UpdateStepResult:
+        # Remove any pre-existing incomplete profile for this SSID — a stale
+        # profile causes "key-mgmt: property is missing" on reconnect.
+        self._run([self._nmcli_path, "connection", "delete", ssid])
         return self._run_step(
             "wifi_connect",
             [self._nmcli_path, "dev", "wifi", "connect", ssid, "password", password],

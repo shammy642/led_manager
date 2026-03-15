@@ -52,14 +52,20 @@ def test_connect_wifi_success():
     calls = []
     def runner(cmd):
         calls.append(list(cmd))
-        return _ok(stdout="connected")
+        return _ok(stdout="connected" if "connect" in cmd else "")
     result = _manager(runner).connect_wifi("MySSID", "secret")
     assert result == UpdateStepResult(step="wifi_connect", success=True, output="connected")
-    assert calls[0] == ["nmcli", "dev", "wifi", "connect", "MySSID", "password", "secret"]
+    assert calls[0] == ["nmcli", "connection", "delete", "MySSID"]
+    assert calls[1] == ["nmcli", "dev", "wifi", "connect", "MySSID", "password", "secret"]
 
 
 def test_connect_wifi_failure():
-    result = _manager(lambda _: _fail(stderr="no AP")).connect_wifi("bad", "pw")
+    call_count = 0
+    def runner(cmd):
+        nonlocal call_count
+        call_count += 1
+        return _ok() if call_count == 1 else _fail(stderr="no AP")
+    result = _manager(runner).connect_wifi("bad", "pw")
     assert result.step == "wifi_connect"
     assert result.success is False
 
@@ -133,7 +139,8 @@ def test_rescan_wifi_does_not_wait_on_failure():
 # ---------------------------------------------------------------------------
 
 def test_run_update_all_success():
-    responses = [_ok("on"), _ok(), _ok("connected"), _ok("pulled"), _ok("off")]
+    # calls: wifi_on, wifi_rescan, connection_delete, wifi_connect, git_pull, wifi_off
+    responses = [_ok("on"), _ok(), _ok(), _ok("connected"), _ok("pulled"), _ok("off")]
     idx = 0
     def runner(cmd):
         nonlocal idx
@@ -173,16 +180,16 @@ def test_run_update_connect_failure_does_wifi_off():
     def runner(cmd):
         nonlocal call_count
         call_count += 1
-        if call_count in (1, 2):
-            return _ok()   # wifi_on, wifi_rescan
-        if call_count == 3:
+        if call_count in (1, 2, 3):
+            return _ok()   # wifi_on, wifi_rescan, connection_delete
+        if call_count == 4:
             return _fail() # wifi_connect
         return _ok()       # wifi_off
 
     result = _manager(runner).run_update("ssid", "pw")
     assert result.success is False
     assert [s.step for s in result.steps] == ["wifi_on", "wifi_rescan", "wifi_connect", "wifi_off"]
-    assert call_count == 4
+    assert call_count == 5
 
 
 def test_run_update_git_pull_failure_does_wifi_off():
@@ -190,21 +197,21 @@ def test_run_update_git_pull_failure_does_wifi_off():
     def runner(cmd):
         nonlocal call_count
         call_count += 1
-        if call_count in (1, 2, 3):
-            return _ok()   # wifi_on, wifi_rescan, wifi_connect
-        if call_count == 4:
+        if call_count in (1, 2, 3, 4):
+            return _ok()   # wifi_on, wifi_rescan, connection_delete, wifi_connect
+        if call_count == 5:
             return _fail() # git_pull
         return _ok()       # wifi_off
 
     result = _manager(runner).run_update("ssid", "pw")
     assert result.success is False
     assert [s.step for s in result.steps] == ["wifi_on", "wifi_rescan", "wifi_connect", "git_pull", "wifi_off"]
-    assert call_count == 5
+    assert call_count == 6
 
 
 def test_run_update_wifi_off_failure_marks_overall_failure():
-    # All steps succeed except wifi_off → overall success should be False
-    responses = [_ok(), _ok(), _ok(), _ok(), _fail()]
+    # calls: wifi_on, wifi_rescan, connection_delete, wifi_connect, git_pull, wifi_off
+    responses = [_ok(), _ok(), _ok(), _ok(), _ok(), _fail()]
     idx = 0
     def runner(cmd):
         nonlocal idx
