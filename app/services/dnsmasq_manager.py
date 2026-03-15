@@ -17,6 +17,10 @@ CommandRunner = Callable[[Sequence[str]], None]
 class DnsmasqCommandError(RuntimeError):
 	command: Sequence[str]
 
+@dataclass(frozen=True)
+class DnsmasqStatus:
+    running: bool
+    status_text: str
 
 def _default_command_runner(command: Sequence[str]) -> None:
 	subprocess.run(list(command), check=True)
@@ -58,6 +62,21 @@ class DnsmasqManager:
 
 	def restart(self) -> None:
 		self._run_command([self._systemctl_path, "restart", self._service_name])
+
+	def get_status(self) -> DnsmasqStatus:
+		try:
+			result = subprocess.run(
+				[self._systemctl_path, "status", self._service_name],
+				capture_output=True,
+				text=True,
+			)
+			running = result.returncode == 0
+			status_text = result.stdout.strip()
+			if not running and not status_text:
+				status_text = result.stderr.strip()
+			return DnsmasqStatus(running=running, status_text=status_text)
+		except Exception as e:
+			return DnsmasqStatus(running=False, status_text=str(e))
 
 	def write_dhcp_conf(self, devices: Sequence[dict[str, str]]) -> None:
 		writer = DnsmasqConfigWriter()

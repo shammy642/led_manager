@@ -6,6 +6,7 @@ from sqlmodel import Session
 
 from app.crud import device_crud, player_crud
 from app.db import get_session
+from app.services.dnsmasq_manager import DnsmasqManager
 from app.services.monitor_hub import get_monitor_hub
 from app.utils.exceptions import PlayerConflictError, PlayerValidationError
 
@@ -21,10 +22,16 @@ def _list_available_devices(session: Session):
 def read_monitor(
 	request: Request,
 	session: Session = Depends(get_session),
+	dnsmasq_manager: DnsmasqManager | None = Depends(DnsmasqManager.from_env),
 ):
 	hub = get_monitor_hub()
 	players = player_crud.list_players_with_devices_and_receivers(session)
 	available_devices = _list_available_devices(session)
+	
+	dnsmasq_status = None
+	if dnsmasq_manager:
+		dnsmasq_status = dnsmasq_manager.get_status()
+
 	return templates.TemplateResponse(
 		"index.html",
 		{
@@ -33,6 +40,7 @@ def read_monitor(
 			"players": players,
 			"available_devices": available_devices,
 			"monitoring_active": hub.monitoring_active,
+			"dnsmasq_status": dnsmasq_status,
 		},
 		status_code=status.HTTP_200_OK,
 	)
