@@ -7,6 +7,7 @@ from app.app import app
 from app.crud.device_crud import create_device
 from app.crud.receiver_crud import create_receiver
 from app.db import get_session
+from app.services.arp_scanner import ArpEntry, ArpScanner
 from app.services.dnsmasq_manager import DnsmasqManager
 
 
@@ -151,3 +152,104 @@ def test_apply_receiver_changes_returns_error_when_unconfigured(client, monkeypa
 		app.dependency_overrides.pop(DnsmasqManager.from_env, None)
 	assert response.status_code == 200
 	assert "DNSMASQ_DHCP_CONF_PATH" in response.text
+
+
+class TestScanReceiverButton:
+	def test_returns_not_configured_when_scanner_is_none(self, client):
+		app.dependency_overrides[ArpScanner.from_env] = lambda: None
+		try:
+			response = client.post("/ui/receiver/scan")
+		finally:
+			app.dependency_overrides.pop(ArpScanner.from_env, None)
+		assert response.status_code == 200
+		assert "SCAN_SUBNET" in response.text
+
+	def test_returns_unregistered_entries(self, client):
+		def _scanner():
+			return ArpScanner(
+				"192.168.1.200",
+				"192.168.1.254",
+				arp_reader=lambda: [
+					ArpEntry("192.168.1.201", "AA:BB:CC:DD:EE:01"),
+					ArpEntry("192.168.1.202", "AA:BB:CC:DD:EE:02"),
+				],
+			)
+
+		app.dependency_overrides[ArpScanner.from_env] = _scanner
+		try:
+			response = client.post("/ui/receiver/scan")
+		finally:
+			app.dependency_overrides.pop(ArpScanner.from_env, None)
+		assert response.status_code == 200
+		assert "AA:BB:CC:DD:EE:01" in response.text
+		assert "AA:BB:CC:DD:EE:02" in response.text
+
+	def test_filters_out_already_reserved_ips(self, client, session):
+		create_receiver(
+			session,
+			name="Reserved",
+			ip_address="192.168.1.201",
+			mac_address="AA:BB:CC:DD:EE:01",
+		)
+
+		def _scanner():
+			return ArpScanner(
+				"192.168.1.200",
+				"192.168.1.254",
+				arp_reader=lambda: [
+					ArpEntry("192.168.1.201", "AA:BB:CC:DD:EE:01"),
+					ArpEntry("192.168.1.202", "AA:BB:CC:DD:EE:02"),
+				],
+			)
+
+		app.dependency_overrides[ArpScanner.from_env] = _scanner
+		try:
+			response = client.post("/ui/receiver/scan")
+		finally:
+			app.dependency_overrides.pop(ArpScanner.from_env, None)
+		assert response.status_code == 200
+		assert "192.168.1.201" not in response.text
+		assert "AA:BB:CC:DD:EE:02" in response.text
+
+	def test_returns_empty_state_when_all_entries_are_reserved(self, client, session):
+		create_receiver(
+			session,
+			name="Reserved",
+			ip_address="192.168.1.201",
+			mac_address="AA:BB:CC:DD:EE:01",
+		)
+
+		def _scanner():
+			return ArpScanner(
+				"192.168.1.200",
+				"192.168.1.254",
+				arp_reader=lambda: [ArpEntry("192.168.1.201", "AA:BB:CC:DD:EE:01")],
+			)
+
+		app.dependency_overrides[ArpScanner.from_env] = _scanner
+		try:
+			response = client.post("/ui/receiver/scan")
+		finally:
+			app.dependency_overrides.pop(ArpScanner.from_env, None)
+		assert response.status_code == 200
+		assert "No unregistered" in response.text
+
+
+class TestUseScanResult:
+	def test_returns_new_receiver_row_with_prefill_mac(self, client):
+		response = client.post(
+			"/ui/receiver/use-scan-result",
+			data={"mac_address": "AA:BB:CC:DD:EE:01"},
+		)
+		assert response.status_code == 200
+		assert "AA:BB:CC:DD:EE:01" in response.text
+		assert "receiver-new" in response.text
+
+	def test_includes_device_options_in_prefilled_row(self, client, session):
+		device = create_device(session, name="Scanner-Device")
+		response = client.post(
+			"/ui/receiver/use-scan-result",
+			data={"mac_address": "BB:CC:DD:EE:FF:00"},
+		)
+		assert response.status_code == 200
+		assert device.name in response.text

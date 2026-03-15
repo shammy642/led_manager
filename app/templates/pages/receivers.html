@@ -12,6 +12,7 @@
         
         <div id="add-new-receiver-button-container">
             {% include 'buttons/add_receiver_button.html' %}
+            {% include 'buttons/scan_receiver_button.html' %}
             <button
                 type="button"
                 id="apply-changes-btn"
@@ -26,6 +27,7 @@
         </div>
     </div>
     <div id="apply-changes-status"></div>
+    <div id="scan-results"></div>
     <div id="receivers-table">
         {% include 'partials/receivers_table.html' %}
     </div>

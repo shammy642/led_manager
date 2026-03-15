@@ -1,0 +1,32 @@
+{% if not configured %}
+    <p class="scan-message scan-message--error">Scan not configured. Set the <code>SCAN_SUBNET</code> environment variable.</p>
+{% elif not entries %}
+    <p class="scan-message">No unregistered devices found on the network.</p>
+{% else %}
+    <table class="scan-results-table">
+        <thead>
+            <tr>
+                <th>IP Address</th>
+                <th>MAC Address</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.ip_address }}</td>
+                <td>{{ entry.mac_address }}</td>
+                <td>
+                    <button
+                        class="btn"
+                        hx-post="{{ url_for('use_scan_result') }}"
+                        hx-vals='{"mac_address": "{{ entry.mac_address }}"}'
+                        hx-target="#receivers-table-contents"
+                        hx-swap="afterbegin"
+                    >Use</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}

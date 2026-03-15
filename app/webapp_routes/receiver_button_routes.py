@@ -4,7 +4,8 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
 from app.crud import device_crud, receiver_crud
 from app.db import get_session
-from app.services.dnsmasq_manager import DnsmasqManager, DnsmasqCommandError
+from app.services.arp_scanner import ArpScanner
+from app.services.dnsmasq_manager import DnsmasqCommandError, DnsmasqManager
 
 receiver_buttons_router = APIRouter()
 receiver_buttons_router.prefix = "/ui/receiver"
@@ -147,6 +148,51 @@ def apply_receiver_changes(
             "request": request,
             "status": "success",
             "message": f"Applied {len(reservations)} reservations. Power cycle the WiFi access point and devices for changes to take effect",
+        },
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@receiver_buttons_router.post(
+    "/scan", response_class=HTMLResponse, name="scan_receiver_button"
+)
+def scan_receiver_button(
+    request: Request,
+    session: Session = Depends(get_session),
+    scanner: ArpScanner | None = Depends(ArpScanner.from_env),
+):
+    if scanner is None:
+        return templates.TemplateResponse(
+            "partials/scan_results.html",
+            {"request": request, "configured": False},
+            status_code=status.HTTP_200_OK,
+        )
+    entries = scanner.scan()
+    existing_ips = {r.ip_address for r in receiver_crud.list_receivers(session)}
+    unregistered = [e for e in entries if e.ip_address not in existing_ips]
+    return templates.TemplateResponse(
+        "partials/scan_results.html",
+        {"request": request, "configured": True, "entries": unregistered},
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@receiver_buttons_router.post(
+    "/use-scan-result", response_class=HTMLResponse, name="use_scan_result"
+)
+def use_scan_result(
+    request: Request,
+    mac_address: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    devices = device_crud.list_devices(session)
+    return templates.TemplateResponse(
+        "partials/receiver_row.html",
+        {
+            "request": request,
+            "mode": "new",
+            "devices": devices,
+            "prefill_mac": mac_address,
         },
         status_code=status.HTTP_200_OK,
     )

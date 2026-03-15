@@ -1,0 +1,8 @@
+<button
+    id="scan-receiver-button"
+    class="btn"
+    hx-post="{{ url_for('scan_receiver_button') }}"
+    hx-target="#scan-results"
+    hx-swap="innerHTML"
+    hx-disabled-elt="this"
+>Scan Network</button>

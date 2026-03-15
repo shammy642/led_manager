@@ -2,7 +2,7 @@
     <input type="text" 
            name="mac_address" 
            placeholder="{% if mode == 'new' %}MAC Address{% endif %}"
-           value="{{ receiver.mac_address if receiver else (create_form.mac_address if create_form else '') }}" 
+           value="{{ receiver.mac_address if receiver else (prefill_mac if prefill_mac is defined else (create_form.mac_address if create_form else '')) }}" 
            {% if mode == 'view' %}disabled{% endif %}
            form="{{ form_id }}" 
            required>
