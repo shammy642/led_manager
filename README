@@ -1,1 +1,83 @@
-Placeholder
+# IP Address Manager
+
+A web-based management tool for LED receiver networks. Tracks receivers (IP + MAC addresses), groups them into devices, assigns devices to players, monitors live reachability, and optionally manages a dnsmasq DHCP configuration.
+
+## Data model
+
+```
+Player  →  Device  →  Receiver
+```
+
+| Entity | Description |
+|--------|-------------|
+| **Player** | Top-level grouping (e.g. a video player) |
+| **Device** | A logical device belonging to a player |
+| **Receiver** | An LED receiver with a unique name, IP address, and MAC address |
+
+## Features
+
+- **CRUD** for Receivers, Devices, and Players via a server-rendered HTML UI (FastAPI + Jinja2 + HTMX)
+- **Live ping monitor** — real-time reachability status for all receivers streamed over WebSocket
+- **dnsmasq integration** — writes DHCP host entries from receiver MAC/IP data and manages the dnsmasq service via `systemctl`
+- Inline validation and conflict detection (duplicate name, IP, MAC) with per-field error messages returned as HTMX partial swaps
+
+## Tech stack
+
+| Layer | Library |
+|-------|---------|
+| Web framework | FastAPI |
+| ORM / models | SQLModel (SQLite by default) |
+| Templates | Jinja2 + HTMX |
+| Validation | Pydantic v2 |
+| Async ping | asyncio |
+| Real-time | WebSockets |
+
+## Dev workflows
+
+```bash
+# Install dependencies
+poetry install
+
+# Run dev server (auto-reload)
+poetry run uvicorn app.app:app --host 0.0.0.0 --reload
+
+# Run production server
+poetry run uvicorn app.app:app --host 0.0.0.0
+
+# Run tests
+poetry run pytest
+
+# Run tests with coverage
+poetry run pytest --cov=app
+```
+
+## Configuration
+
+Environment variables (`.env` file or shell):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_LOCATION` | `./ip_manager.db` | Path to the SQLite database file |
+| `DNSMASQ_DHCP_CONF_PATH` | *(unset)* | Path to the dnsmasq DHCP config file; dnsmasq integration is disabled when unset |
+| `DNSMASQ_SERVICE_NAME` | `dnsmasq` | systemd service name for dnsmasq |
+| `DNSMASQ_SYSTEMCTL_PATH` | `systemctl` | Path to the `systemctl` binary |
+
+## Project structure
+
+```
+app/
+  app.py                  # FastAPI app wiring, router registration
+  db.py                   # Engine, session, table creation
+  models/                 # SQLModel table definitions
+  crud/                   # Database operations (raise domain errors on failure)
+  webapp_routes/          # FastAPI routers (thin — delegate to crud/)
+  services/               # dnsmasq manager, ping manager, WebSocket hub
+  templates/              # Jinja2 HTML templates and HTMX partials
+  utils/                  # Exceptions, form parsing, validation formatting
+tests/
+  crud/                   # CRUD unit tests (in-memory SQLite)
+  routes/                 # Route integration tests (TestClient + in-memory SQLite)
+  models/                 # Model validation tests
+  services/               # Service unit tests
+  utils/                  # Utility unit tests
+```
