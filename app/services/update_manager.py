@@ -38,12 +38,18 @@ def _default_command_runner(command: Sequence[str]) -> subprocess.CompletedProce
 class UpdateManager:
     @classmethod
     def from_env(cls) -> "UpdateManager":
+        raw_wait = os.getenv("UPDATE_RESCAN_WAIT_SECONDS", "5.0")
+        try:
+            rescan_wait_seconds = float(raw_wait)
+        except ValueError:
+            rescan_wait_seconds = 5.0
         return cls(
             nmcli_path=os.getenv("UPDATE_NMCLI_PATH", "nmcli"),
             git_path=os.getenv("UPDATE_GIT_PATH", "git"),
             repo_path=Path(os.getenv("UPDATE_REPO_PATH", str(Path.cwd()))),
             service_name=os.getenv("UPDATE_SERVICE_NAME", ""),
             systemctl_path=os.getenv("UPDATE_SYSTEMCTL_PATH", "systemctl"),
+            rescan_wait_seconds=rescan_wait_seconds,
         )
 
     def __init__(
@@ -54,6 +60,7 @@ class UpdateManager:
         repo_path: Path | None = None,
         service_name: str = "",
         systemctl_path: str = "systemctl",
+        rescan_wait_seconds: float = 5.0,
         command_runner: OutputCommandRunner | None = None,
     ) -> None:
         self._nmcli_path = nmcli_path
@@ -61,6 +68,7 @@ class UpdateManager:
         self._repo_path = repo_path or Path.cwd()
         self._service_name = service_name
         self._systemctl_path = systemctl_path
+        self._rescan_wait_seconds = rescan_wait_seconds
         self._run = command_runner or _default_command_runner
 
     def _run_step(self, step: str, command: Sequence[str]) -> UpdateStepResult:
@@ -73,6 +81,12 @@ class UpdateManager:
 
     def enable_wifi(self) -> UpdateStepResult:
         return self._run_step("wifi_on", [self._nmcli_path, "radio", "wifi", "on"])
+
+    def rescan_wifi(self) -> UpdateStepResult:
+        result = self._run_step("wifi_rescan", [self._nmcli_path, "dev", "wifi", "rescan"])
+        if result.success:
+            time.sleep(self._rescan_wait_seconds)
+        return result
 
     def connect_wifi(self, ssid: str, password: str) -> UpdateStepResult:
         return self._run_step(
@@ -104,6 +118,12 @@ class UpdateManager:
         wifi_on = self.enable_wifi()
         steps.append(wifi_on)
         if not wifi_on.success:
+            return UpdateResult(success=False, steps=steps)
+
+        rescan = self.rescan_wifi()
+        steps.append(rescan)
+        if not rescan.success:
+            steps.append(self.disable_wifi())
             return UpdateResult(success=False, steps=steps)
 
         connect = self.connect_wifi(ssid, password)

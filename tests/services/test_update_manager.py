@@ -22,6 +22,7 @@ def _manager(runner) -> UpdateManager:
         repo_path=Path("/repo"),
         service_name="myapp",
         systemctl_path="systemctl",
+        rescan_wait_seconds=0,
         command_runner=runner,
     )
 
@@ -95,12 +96,44 @@ def test_disable_wifi_failure():
     assert result.success is False
 
 
+def test_rescan_wifi_success():
+    calls = []
+    def runner(cmd):
+        calls.append(list(cmd))
+        return _ok()
+    result = _manager(runner).rescan_wifi()
+    assert result == UpdateStepResult(step="wifi_rescan", success=True, output="")
+    assert calls[0] == ["nmcli", "dev", "wifi", "rescan"]
+
+
+def test_rescan_wifi_failure():
+    result = _manager(lambda _: _fail(stderr="failed")).rescan_wifi()
+    assert result.step == "wifi_rescan"
+    assert result.success is False
+
+
+def test_rescan_wifi_waits_on_success():
+    import time
+    m = UpdateManager(rescan_wait_seconds=0.05, command_runner=lambda _: _ok())
+    start = time.monotonic()
+    m.rescan_wifi()
+    assert time.monotonic() - start >= 0.05
+
+
+def test_rescan_wifi_does_not_wait_on_failure():
+    import time
+    m = UpdateManager(rescan_wait_seconds=10, command_runner=lambda _: _fail())
+    start = time.monotonic()
+    m.rescan_wifi()
+    assert time.monotonic() - start < 1
+
+
 # ---------------------------------------------------------------------------
 # run_update orchestration
 # ---------------------------------------------------------------------------
 
 def test_run_update_all_success():
-    responses = [_ok("on"), _ok("connected"), _ok("pulled"), _ok("off")]
+    responses = [_ok("on"), _ok(), _ok("connected"), _ok("pulled"), _ok("off")]
     idx = 0
     def runner(cmd):
         nonlocal idx
@@ -109,7 +142,7 @@ def test_run_update_all_success():
         return r
     result = _manager(runner).run_update("ssid", "pw")
     assert result.success is True
-    assert [s.step for s in result.steps] == ["wifi_on", "wifi_connect", "git_pull", "wifi_off"]
+    assert [s.step for s in result.steps] == ["wifi_on", "wifi_rescan", "wifi_connect", "git_pull", "wifi_off"]
 
 
 def test_run_update_stops_at_wifi_on_failure():
@@ -118,7 +151,7 @@ def test_run_update_stops_at_wifi_on_failure():
     assert [s.step for s in result.steps] == ["wifi_on"]
 
 
-def test_run_update_connect_failure_does_wifi_off():
+def test_run_update_stops_at_rescan_failure_does_wifi_off():
     call_count = 0
     def runner(cmd):
         nonlocal call_count
@@ -126,13 +159,30 @@ def test_run_update_connect_failure_does_wifi_off():
         if call_count == 1:
             return _ok()   # wifi_on
         if call_count == 2:
+            return _fail() # wifi_rescan
+        return _ok()       # wifi_off
+
+    result = _manager(runner).run_update("ssid", "pw")
+    assert result.success is False
+    assert [s.step for s in result.steps] == ["wifi_on", "wifi_rescan", "wifi_off"]
+    assert call_count == 3
+
+
+def test_run_update_connect_failure_does_wifi_off():
+    call_count = 0
+    def runner(cmd):
+        nonlocal call_count
+        call_count += 1
+        if call_count in (1, 2):
+            return _ok()   # wifi_on, wifi_rescan
+        if call_count == 3:
             return _fail() # wifi_connect
         return _ok()       # wifi_off
 
     result = _manager(runner).run_update("ssid", "pw")
     assert result.success is False
-    assert [s.step for s in result.steps] == ["wifi_on", "wifi_connect", "wifi_off"]
-    assert call_count == 3
+    assert [s.step for s in result.steps] == ["wifi_on", "wifi_rescan", "wifi_connect", "wifi_off"]
+    assert call_count == 4
 
 
 def test_run_update_git_pull_failure_does_wifi_off():
@@ -140,21 +190,21 @@ def test_run_update_git_pull_failure_does_wifi_off():
     def runner(cmd):
         nonlocal call_count
         call_count += 1
-        if call_count in (1, 2):
-            return _ok()   # wifi_on, wifi_connect
-        if call_count == 3:
+        if call_count in (1, 2, 3):
+            return _ok()   # wifi_on, wifi_rescan, wifi_connect
+        if call_count == 4:
             return _fail() # git_pull
         return _ok()       # wifi_off
 
     result = _manager(runner).run_update("ssid", "pw")
     assert result.success is False
-    assert [s.step for s in result.steps] == ["wifi_on", "wifi_connect", "git_pull", "wifi_off"]
-    assert call_count == 4
+    assert [s.step for s in result.steps] == ["wifi_on", "wifi_rescan", "wifi_connect", "git_pull", "wifi_off"]
+    assert call_count == 5
 
 
 def test_run_update_wifi_off_failure_marks_overall_failure():
     # All steps succeed except wifi_off → overall success should be False
-    responses = [_ok(), _ok(), _ok(), _fail()]
+    responses = [_ok(), _ok(), _ok(), _ok(), _fail()]
     idx = 0
     def runner(cmd):
         nonlocal idx
@@ -163,7 +213,7 @@ def test_run_update_wifi_off_failure_marks_overall_failure():
         return r
     result = _manager(runner).run_update("ssid", "pw")
     assert result.success is False
-    assert [s.step for s in result.steps] == ["wifi_on", "wifi_connect", "git_pull", "wifi_off"]
+    assert [s.step for s in result.steps] == ["wifi_on", "wifi_rescan", "wifi_connect", "git_pull", "wifi_off"]
 
 
 # ---------------------------------------------------------------------------
@@ -193,7 +243,7 @@ def test_restart_service_calls_systemctl():
 # ---------------------------------------------------------------------------
 
 def test_from_env_defaults(monkeypatch):
-    for key in ("UPDATE_NMCLI_PATH", "UPDATE_GIT_PATH", "UPDATE_REPO_PATH", "UPDATE_SERVICE_NAME", "UPDATE_SYSTEMCTL_PATH"):
+    for key in ("UPDATE_NMCLI_PATH", "UPDATE_GIT_PATH", "UPDATE_REPO_PATH", "UPDATE_SERVICE_NAME", "UPDATE_SYSTEMCTL_PATH", "UPDATE_RESCAN_WAIT_SECONDS"):
         monkeypatch.delenv(key, raising=False)
 
     m = UpdateManager.from_env()
@@ -202,6 +252,7 @@ def test_from_env_defaults(monkeypatch):
     assert m._service_name == ""
     assert m._systemctl_path == "systemctl"
     assert m._repo_path == Path.cwd()
+    assert m._rescan_wait_seconds == 5.0
 
 
 def test_from_env_custom(monkeypatch, tmp_path):
@@ -210,6 +261,7 @@ def test_from_env_custom(monkeypatch, tmp_path):
     monkeypatch.setenv("UPDATE_REPO_PATH", str(tmp_path))
     monkeypatch.setenv("UPDATE_SERVICE_NAME", "led-manager")
     monkeypatch.setenv("UPDATE_SYSTEMCTL_PATH", "/bin/systemctl")
+    monkeypatch.setenv("UPDATE_RESCAN_WAIT_SECONDS", "3.5")
 
     m = UpdateManager.from_env()
     assert m._nmcli_path == "/usr/bin/nmcli"
@@ -217,6 +269,13 @@ def test_from_env_custom(monkeypatch, tmp_path):
     assert m._repo_path == tmp_path
     assert m._service_name == "led-manager"
     assert m._systemctl_path == "/bin/systemctl"
+    assert m._rescan_wait_seconds == 3.5
+
+
+def test_from_env_invalid_rescan_wait_falls_back_to_default(monkeypatch):
+    monkeypatch.setenv("UPDATE_RESCAN_WAIT_SECONDS", "not-a-number")
+    m = UpdateManager.from_env()
+    assert m._rescan_wait_seconds == 5.0
 
 
 # ---------------------------------------------------------------------------

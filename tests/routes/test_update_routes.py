@@ -64,6 +64,7 @@ def _success_result() -> UpdateResult:
         success=True,
         steps=[
             UpdateStepResult(step="wifi_on", success=True, output=""),
+            UpdateStepResult(step="wifi_rescan", success=True, output=""),
             UpdateStepResult(step="wifi_connect", success=True, output="connected"),
             UpdateStepResult(step="git_pull", success=True, output="Already up to date."),
             UpdateStepResult(step="wifi_off", success=True, output=""),
