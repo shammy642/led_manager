@@ -6,6 +6,7 @@ from sqlmodel import Session
 from app.crud import device_crud, receiver_crud
 from app.db import get_session
 from app.models.sort import ReceiverSort
+from app.services.dnsmasq_manager import DnsmasqManager
 from app.utils.exceptions import ReceiverConflictError, ReceiverValidationError
 from app.utils.form_parsing import parse_optional_int_field
 
@@ -17,9 +18,11 @@ def read_receivers(
     request: Request,
     sort: ReceiverSort = ReceiverSort.newest,
     session: Session = Depends(get_session),
+    dnsmasq_manager: DnsmasqManager | None = Depends(DnsmasqManager.from_env),
 ):
     receivers = receiver_crud.list_receivers(session, sort=sort.value)
     devices = device_crud.list_devices(session)
+    dnsmasq_status = dnsmasq_manager.get_status() if dnsmasq_manager else None
     return templates.TemplateResponse(
         "index.html",
         {
@@ -28,6 +31,7 @@ def read_receivers(
             "receivers": receivers,
             "devices": devices,
             "receivers_sort": sort.value,
+            "dnsmasq_status": dnsmasq_status,
         },
         status_code=status.HTTP_200_OK,
     )

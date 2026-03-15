@@ -260,6 +260,15 @@ input[type="text"]:focus {
     padding: 0.25rem 0;
 }
 
+.monitor-section-header {
+    justify-content: flex-start;
+    gap: 0.5rem;
+}
+
+#monitor-section #add-new-player-button-container {
+    margin-left: auto;
+}
+
 .header-container {
     display: flex;
     justify-content: space-between;
@@ -350,23 +359,26 @@ input[type="text"]:focus {
         display: none;
     }
 
-    #monitor-section .section-header {
-        align-items: stretch;
-    }
-
-    #monitor-section .section-header > div {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+    #monitor-section .monitor-section-header {
+        flex-direction: row;
         flex-wrap: wrap;
+        align-items: center;
         gap: 0.5rem;
     }
 
+    #monitor-section .monitor-title-row {
+        flex-basis: 100%;
+        order: 1;
+    }
+
+    #monitor-section #monitor-toggle-container {
+        order: 2;
+        flex-grow: 1;
+    }
+
     #monitor-section #add-new-player-button-container {
-        width: 100%;
-        display: flex;
-        justify-content: flex-start;
+        order: 3;
+        margin-left: 0;
     }
 
     #monitor-section input[type="text"] {

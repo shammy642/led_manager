@@ -10,6 +10,16 @@
 </head>
 
 <body>
+    {% if dnsmasq_status %}
+    <div style="position: fixed; top: 0.6rem; right: 1.25rem; font-size: 0.75em; color: #888; z-index: 100;">
+        DHCP:
+        {% if dnsmasq_status.running %}
+            <span style="color: #006600;">&#x25cf; Running</span>
+        {% else %}
+            <span style="color: #cc0000;">&#x25cf; Stopped</span>
+        {% endif %}
+    </div>
+    {% endif %}
     <div class="header">
         <section class="section-header receivers-section">
             <h1>Box 9 LED Manager</h1>
