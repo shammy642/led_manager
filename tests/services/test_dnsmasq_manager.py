@@ -174,3 +174,51 @@ def test_get_status_uses_configured_service_name(tmp_path: Path):
     mock_run.assert_called_once_with(
         ["/bin/systemctl", "status", "custom-dnsmasq"], capture_output=True, text=True
     )
+
+
+def test_write_dhcp_conf_includes_lease_file(tmp_path: Path):
+    conf_path = tmp_path / "dhcp.conf"
+    manager = DnsmasqManager(
+        dhcp_conf_path=conf_path,
+        dhcp_lease_file="/var/lib/misc/dnsmasq.leases",
+    )
+
+    manager.write_dhcp_conf([])
+
+    assert "dhcp-leasefile=/var/lib/misc/dnsmasq.leases" in conf_path.read_text(encoding="utf-8")
+
+
+def test_write_dhcp_conf_no_lease_file_by_default(tmp_path: Path):
+    conf_path = tmp_path / "dhcp.conf"
+    manager = DnsmasqManager(dhcp_conf_path=conf_path)
+
+    manager.write_dhcp_conf([])
+
+    assert "dhcp-leasefile" not in conf_path.read_text(encoding="utf-8")
+
+
+def test_from_env_returns_none_when_no_conf_path(monkeypatch):
+    monkeypatch.delenv("DNSMASQ_DHCP_CONF_PATH", raising=False)
+    assert DnsmasqManager.from_env() is None
+
+
+def test_from_env_sets_lease_file(tmp_path, monkeypatch):
+    conf_path = str(tmp_path / "dhcp.conf")
+    monkeypatch.setenv("DNSMASQ_DHCP_CONF_PATH", conf_path)
+    monkeypatch.setenv("DNSMASQ_LEASE_FILE", "/tmp/dnsmasq.leases")
+    monkeypatch.delenv("DNSMASQ_SERVICE_NAME", raising=False)
+    monkeypatch.delenv("DNSMASQ_SYSTEMCTL_PATH", raising=False)
+
+    manager = DnsmasqManager.from_env()
+    assert manager is not None
+    assert manager._dhcp_lease_file == "/tmp/dnsmasq.leases"
+
+
+def test_from_env_lease_file_defaults_to_none(tmp_path, monkeypatch):
+    conf_path = str(tmp_path / "dhcp.conf")
+    monkeypatch.setenv("DNSMASQ_DHCP_CONF_PATH", conf_path)
+    monkeypatch.delenv("DNSMASQ_LEASE_FILE", raising=False)
+
+    manager = DnsmasqManager.from_env()
+    assert manager is not None
+    assert manager._dhcp_lease_file is None

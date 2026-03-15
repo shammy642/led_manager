@@ -37,3 +37,22 @@ domain=test
 expand-hosts
 """
     assert output_file.read_text(encoding="utf-8") == expected
+
+
+def test_dnsmasq_config_writer_with_lease_file(tmp_path: Path):
+    output_file = tmp_path / "dhcp.conf"
+    writer = DnsmasqConfigWriter(dhcp_lease_file="/var/lib/misc/dnsmasq.leases")
+    devices = [{"mac_address": "AA:BB:CC:DD:EE:FF", "ip_address": "192.168.1.1", "name": "device"}]
+
+    writer.write_config(devices, output_file)
+
+    content = output_file.read_text(encoding="utf-8")
+    assert "dhcp-leasefile=/var/lib/misc/dnsmasq.leases" in content
+
+
+def test_dnsmasq_config_writer_no_lease_file_by_default(tmp_path: Path):
+    output_file = tmp_path / "dhcp.conf"
+    writer = DnsmasqConfigWriter()
+    writer.write_config([], output_file)
+
+    assert "dhcp-leasefile" not in output_file.read_text(encoding="utf-8")
