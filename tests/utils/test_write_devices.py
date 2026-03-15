@@ -5,7 +5,7 @@ def test_dnsmasq_config_writer_default(tmp_path: Path):
     output_file = tmp_path / "dhcp.conf"
     writer = DnsmasqConfigWriter()
     devices = [
-        {"mac_address": "9C:05:D6:F9:24:18", "ip_address": "192.168.1.7", "name": "box9_u6_ap"},
+        {"mac_address": "9C:05:D6:F9:24:18", "ip_address": "192.168.1.7", "name": "Box9 U6 AP!"},
         {"mac_address": "80:FA:5B:3C:F6:77", "ip_address": "192.168.1.9", "name": "box_9_laptop"},
     ]
     

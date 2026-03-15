@@ -1,6 +1,8 @@
 from collections.abc import Sequence
 from pathlib import Path
 
+from app.utils.formatting import to_snake_case
+
 
 class DnsmasqConfigWriter:
     def __init__(
@@ -26,7 +28,8 @@ class DnsmasqConfigWriter:
         for device in devices:
             mac = device.get("mac_address", "")
             ip = device.get("ip_address", "")
-            name = device.get("name", "")
+            name = to_snake_case(device.get("name", ""))
+            
             lines.append(f"dhcp-host={mac},{ip},{name}")
 
         output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
