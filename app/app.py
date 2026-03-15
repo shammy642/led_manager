@@ -12,6 +12,7 @@ from app.webapp_routes.monitor_routes import monitor_router
 from app.webapp_routes.monitor_button_routes import monitor_buttons_router
 from app.webapp_routes.monitor_ws_routes import monitor_ws_router
 from app.webapp_routes.player_button_routes import player_buttons_router
+from app.webapp_routes.update_routes import update_router
 
 
 @asynccontextmanager
@@ -30,6 +31,7 @@ app.include_router(player_buttons_router)
 app.include_router(monitor_router)
 app.include_router(monitor_buttons_router)
 app.include_router(monitor_ws_router)
+app.include_router(update_router)
 
 
 @app.get("/")

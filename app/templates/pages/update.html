@@ -1,0 +1,34 @@
+<section id="update-section" class="devices-section">
+    <div class="section-header">
+        <h2>Update</h2>
+    </div>
+
+    <p>
+        Connect the Raspberry Pi to a Wi-Fi network and pull the latest changes from git.
+        Wi-Fi will be disabled and the app restarted automatically once the update is complete.
+    </p>
+
+    <form
+        hx-post="{{ url_for('run_update') }}"
+        hx-target="#update-status"
+        hx-swap="outerHTML"
+        hx-disabled-elt="find button"
+        hx-indicator="#update-spinner"
+        style="display: flex; flex-direction: column; gap: 0.75rem; max-width: 24rem; margin-bottom: 1.5rem;"
+    >
+        <label style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <span>Wi-Fi SSID</span>
+            <input type="text" name="ssid" required placeholder="Network name" autocomplete="off">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <span>Password</span>
+            <input type="password" name="password" required placeholder="Network password" autocomplete="off">
+        </label>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <button type="submit" class="btn btn--success">Connect &amp; Update</button>
+            <span id="update-spinner" class="htmx-indicator" aria-label="Working…">&#8987;</span>
+        </div>
+    </form>
+
+    <div id="update-status"></div>
+</section>

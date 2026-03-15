@@ -16,7 +16,8 @@
             <nav>
                 <a href="{{ url_for('read_monitor') }}">Monitor</a>
                 <a href="{{ url_for('read_devices') }}">Devices</a>
-                <a href="{{ url_for('read_receivers') }}">Receivers</a> 
+                <a href="{{ url_for('read_receivers') }}">Receivers</a>
+                <a href="{{ url_for('read_update') }}">Update</a> 
             </nav>
             
         </section>
@@ -25,6 +26,8 @@
         {% include 'pages/receivers.html' %}
     {% elif active_page == 'monitor' %}
         {% include 'pages/monitor.html' %}
+    {% elif active_page == 'update' %}
+        {% include 'pages/update.html' %}
     {% else %}
         {% include 'pages/devices.html' %}
     {% endif %}

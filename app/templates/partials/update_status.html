@@ -1,0 +1,66 @@
+{% set step_labels = {
+    'wifi_on': 'Enable Wi-Fi',
+    'wifi_connect': 'Connect to network',
+    'git_pull': 'Git pull',
+    'wifi_off': 'Disable Wi-Fi'
+} %}
+
+<div id="update-status" style="margin-top: 1rem;">
+    {% if result.success %}
+    <div style="padding: 0.75rem 1rem; border-radius: 4px; background: #e6ffe6; border: 1px solid #b3ffb3; margin-bottom: 1rem;">
+        <strong style="color: #006600;">Update complete. Restarting&hellip;</strong>
+    </div>
+    {% else %}
+    {% set failed_step = result.steps | selectattr('success', 'equalto', false) | first %}
+    <div style="padding: 0.75rem 1rem; border-radius: 4px; background: #ffe6e6; border: 1px solid #ffb3b3; margin-bottom: 1rem;">
+        <strong style="color: #cc0000;">
+            Update failed
+            {% if failed_step %} at: {{ step_labels.get(failed_step.step, failed_step.step) }}{% endif %}.
+        </strong>
+        Check the output below and try again.
+    </div>
+    {% endif %}
+
+    <table style="width: 100%; border-collapse: collapse;">
+        <tbody>
+        {% for step in result.steps %}
+        <tr style="border-bottom: 1px solid #e0e0e0;">
+            <td style="padding: 0.5rem 0.75rem; white-space: nowrap; width: 1%;">
+                {% if step.success %}
+                <span style="color: #006600;" aria-label="Success">&#10003;</span>
+                {% else %}
+                <span style="color: #cc0000;" aria-label="Failed">&#10007;</span>
+                {% endif %}
+            </td>
+            <td style="padding: 0.5rem 0.75rem; white-space: nowrap; width: 1%;">
+                {{ step_labels.get(step.step, step.step) }}
+            </td>
+            <td style="padding: 0.5rem 0.75rem;">
+                {% if step.output %}
+                <pre style="margin: 0; font-size: 0.85em; white-space: pre-wrap; word-break: break-word;">{{ step.output }}</pre>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if result.success %}
+<script>
+    (function () {
+        var intervalId = setInterval(function () {
+            fetch('/', { method: 'GET', cache: 'no-store' })
+                .then(function (res) {
+                    if (res.ok) {
+                        clearInterval(intervalId);
+                        location.href = '/';
+                    }
+                })
+                .catch(function () {
+                    // still restarting — keep polling
+                });
+        }, 2000);
+    })();
+</script>
+{% endif %}
