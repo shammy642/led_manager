@@ -1,6 +1,6 @@
 # IP Address Manager
 
-A web-based management tool for LED receiver networks. Tracks receivers (IP + MAC addresses), groups them into devices, assigns devices to players, monitors live reachability, and optionally manages a dnsmasq DHCP configuration.
+A web-based management tool for Box 9's LED receivers and network device. Tracks receivers (IP + MAC addresses), groups them into devices, assigns devices to players, monitors live reachability, and optionally manages a dnsmasq DHCP configuration.
 
 ## Data model
 
@@ -81,3 +81,4 @@ tests/
   services/               # Service unit tests
   utils/                  # Utility unit tests
 ```
+
