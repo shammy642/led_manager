@@ -61,10 +61,12 @@ def test_dnsmasq_config_writer_no_lease_file_by_default(tmp_path: Path):
 
 def test_dnsmasq_config_writer_custom_address(tmp_path: Path):
     output_file = tmp_path / "dhcp.conf"
-    writer = DnsmasqConfigWriter(address="address=/custom.host/10.0.0.1")
+    writer = DnsmasqConfigWriter(address="/custom.host/10.0.0.1")
     writer.write_config([], output_file)
 
-    assert "address=/custom.host/10.0.0.1" in output_file.read_text(encoding="utf-8")
+    content = output_file.read_text(encoding="utf-8")
+    assert "address=/custom.host/10.0.0.1\n" in content
+    assert content.count("address=") == 1
 
 
 def test_dnsmasq_config_writer_no_address(tmp_path: Path):

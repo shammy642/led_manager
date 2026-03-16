@@ -245,11 +245,11 @@ def test_write_dhcp_conf_excludes_address_when_none(tmp_path: Path):
 def test_from_env_sets_address(tmp_path, monkeypatch):
     conf_path = str(tmp_path / "dhcp.conf")
     monkeypatch.setenv("DNSMASQ_DHCP_CONF_PATH", conf_path)
-    monkeypatch.setenv("DNSMASQ_ADDRESS", "address=/myhost.lan/10.1.1.1")
+    monkeypatch.setenv("DNSMASQ_ADDRESS", "/myhost.lan/10.1.1.1")
 
     manager = DnsmasqManager.from_env()
     assert manager is not None
-    assert manager._address == "address=/myhost.lan/10.1.1.1"
+    assert manager._address == "/myhost.lan/10.1.1.1"
 
 
 def test_from_env_omits_address_when_empty_string(tmp_path, monkeypatch):
@@ -269,4 +269,4 @@ def test_from_env_address_defaults_to_box9pi(tmp_path, monkeypatch):
 
     manager = DnsmasqManager.from_env()
     assert manager is not None
-    assert manager._address == "address=/box9pi.box9/192.168.1.1"
+    assert manager._address == "/box9pi.box9/192.168.1.1"

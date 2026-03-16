@@ -37,7 +37,7 @@ class DnsmasqManager:
 		systemctl_path = os.getenv("DNSMASQ_SYSTEMCTL_PATH", "systemctl")
 		dhcp_lease_file = os.getenv("DNSMASQ_LEASE_FILE")
 		address_env = os.getenv("DNSMASQ_ADDRESS")
-		address: str | None = "address=/box9pi.box9/192.168.1.1" if address_env is None else (address_env or None)
+		address: str | None = "/box9pi.box9/192.168.1.1" if address_env is None else (address_env or None)
 		return cls(
 			dhcp_conf_path=Path(conf_path),
 			service_name=service_name,
@@ -54,7 +54,7 @@ class DnsmasqManager:
 		service_name: str = "dnsmasq",
 		systemctl_path: str = "systemctl",
 		dhcp_lease_file: str | None = None,
-		address: str | None = "address=/box9pi.box9/192.168.1.1",
+		address: str | None = "/box9pi.box9/192.168.1.1",
 	) -> None:
 		self._dhcp_conf_path = dhcp_conf_path
 		self._run = command_runner or _default_command_runner
