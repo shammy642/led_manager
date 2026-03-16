@@ -61,6 +61,8 @@ Environment variables (`.env` file or shell):
 | `DNSMASQ_DHCP_CONF_PATH` | *(unset)* | Path to the dnsmasq DHCP config file; dnsmasq integration is disabled when unset |
 | `DNSMASQ_SERVICE_NAME` | `dnsmasq` | systemd service name for dnsmasq |
 | `DNSMASQ_SYSTEMCTL_PATH` | `systemctl` | Path to the `systemctl` binary |
+| `DNSMASQ_LEASE_FILE` | *(unset)* | Path to the dnsmasq lease file; omitted from config when unset |
+| `DNSMASQ_ADDRESS` | `address=/box9pi.box9/192.168.1.1` | dnsmasq `address=` directive written to the config; set to empty string to omit |
 
 ## Project structure
 

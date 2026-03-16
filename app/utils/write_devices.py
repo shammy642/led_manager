@@ -11,11 +11,13 @@ class DnsmasqConfigWriter:
         dhcp_range: str = "192.168.1.200,192.168.1.254,12h",
         domain: str = "box9",
         dhcp_lease_file: str | None = None,
+        address: str | None = "/box9pi.box9/192.168.1.1",
     ) -> None:
         self.interface = interface
         self.dhcp_range = dhcp_range
         self.domain = domain
         self.dhcp_lease_file = dhcp_lease_file
+        self.address = address
 
     def write_config(self, devices: Sequence[dict[str, str]], output_path: Path) -> None:
         lines = [
@@ -26,6 +28,8 @@ class DnsmasqConfigWriter:
             f"domain={self.domain}",
             "expand-hosts",
         ]
+        if self.address:
+            lines.append(f"address={self.address}")
         if self.dhcp_lease_file:
             lines.append(f"dhcp-leasefile={self.dhcp_lease_file}")
 

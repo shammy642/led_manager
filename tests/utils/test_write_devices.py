@@ -17,6 +17,7 @@ no-resolv
 domain-needed
 domain=box9
 expand-hosts
+address=/box9pi.box9/192.168.1.1
 dhcp-host=9C:05:D6:F9:24:18,192.168.1.7,box9_u6_ap
 dhcp-host=80:FA:5B:3C:F6:77,192.168.1.9,box_9_laptop
 """
@@ -24,7 +25,7 @@ dhcp-host=80:FA:5B:3C:F6:77,192.168.1.9,box_9_laptop
 
 def test_dnsmasq_config_writer_custom(tmp_path: Path):
     output_file = tmp_path / "dhcp.conf"
-    writer = DnsmasqConfigWriter(interface="wlan0", dhcp_range="10.0.0.50,10.0.0.100,24h", domain="test")
+    writer = DnsmasqConfigWriter(interface="wlan0", dhcp_range="10.0.0.50,10.0.0.100,24h", domain="test", address=None)
     devices = []
     
     writer.write_config(devices, output_file)
@@ -56,3 +57,19 @@ def test_dnsmasq_config_writer_no_lease_file_by_default(tmp_path: Path):
     writer.write_config([], output_file)
 
     assert "dhcp-leasefile" not in output_file.read_text(encoding="utf-8")
+
+
+def test_dnsmasq_config_writer_custom_address(tmp_path: Path):
+    output_file = tmp_path / "dhcp.conf"
+    writer = DnsmasqConfigWriter(address="address=/custom.host/10.0.0.1")
+    writer.write_config([], output_file)
+
+    assert "address=/custom.host/10.0.0.1" in output_file.read_text(encoding="utf-8")
+
+
+def test_dnsmasq_config_writer_no_address(tmp_path: Path):
+    output_file = tmp_path / "dhcp.conf"
+    writer = DnsmasqConfigWriter(address=None)
+    writer.write_config([], output_file)
+
+    assert "address=" not in output_file.read_text(encoding="utf-8")

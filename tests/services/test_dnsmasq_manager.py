@@ -222,3 +222,51 @@ def test_from_env_lease_file_defaults_to_none(tmp_path, monkeypatch):
     manager = DnsmasqManager.from_env()
     assert manager is not None
     assert manager._dhcp_lease_file is None
+
+
+def test_write_dhcp_conf_includes_default_address(tmp_path: Path):
+    conf_path = tmp_path / "dhcp.conf"
+    manager = DnsmasqManager(dhcp_conf_path=conf_path)
+
+    manager.write_dhcp_conf([])
+
+    assert "address=/box9pi.box9/192.168.1.1" in conf_path.read_text(encoding="utf-8")
+
+
+def test_write_dhcp_conf_excludes_address_when_none(tmp_path: Path):
+    conf_path = tmp_path / "dhcp.conf"
+    manager = DnsmasqManager(dhcp_conf_path=conf_path, address=None)
+
+    manager.write_dhcp_conf([])
+
+    assert "address=" not in conf_path.read_text(encoding="utf-8")
+
+
+def test_from_env_sets_address(tmp_path, monkeypatch):
+    conf_path = str(tmp_path / "dhcp.conf")
+    monkeypatch.setenv("DNSMASQ_DHCP_CONF_PATH", conf_path)
+    monkeypatch.setenv("DNSMASQ_ADDRESS", "address=/myhost.lan/10.1.1.1")
+
+    manager = DnsmasqManager.from_env()
+    assert manager is not None
+    assert manager._address == "address=/myhost.lan/10.1.1.1"
+
+
+def test_from_env_omits_address_when_empty_string(tmp_path, monkeypatch):
+    conf_path = str(tmp_path / "dhcp.conf")
+    monkeypatch.setenv("DNSMASQ_DHCP_CONF_PATH", conf_path)
+    monkeypatch.setenv("DNSMASQ_ADDRESS", "")
+
+    manager = DnsmasqManager.from_env()
+    assert manager is not None
+    assert manager._address is None
+
+
+def test_from_env_address_defaults_to_box9pi(tmp_path, monkeypatch):
+    conf_path = str(tmp_path / "dhcp.conf")
+    monkeypatch.setenv("DNSMASQ_DHCP_CONF_PATH", conf_path)
+    monkeypatch.delenv("DNSMASQ_ADDRESS", raising=False)
+
+    manager = DnsmasqManager.from_env()
+    assert manager is not None
+    assert manager._address == "address=/box9pi.box9/192.168.1.1"

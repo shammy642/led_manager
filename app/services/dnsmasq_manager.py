@@ -36,11 +36,14 @@ class DnsmasqManager:
 		service_name = os.getenv("DNSMASQ_SERVICE_NAME", "dnsmasq")
 		systemctl_path = os.getenv("DNSMASQ_SYSTEMCTL_PATH", "systemctl")
 		dhcp_lease_file = os.getenv("DNSMASQ_LEASE_FILE")
+		address_env = os.getenv("DNSMASQ_ADDRESS")
+		address: str | None = "address=/box9pi.box9/192.168.1.1" if address_env is None else (address_env or None)
 		return cls(
 			dhcp_conf_path=Path(conf_path),
 			service_name=service_name,
 			systemctl_path=systemctl_path,
 			dhcp_lease_file=dhcp_lease_file,
+			address=address,
 		)
 
 	def __init__(
@@ -51,12 +54,14 @@ class DnsmasqManager:
 		service_name: str = "dnsmasq",
 		systemctl_path: str = "systemctl",
 		dhcp_lease_file: str | None = None,
+		address: str | None = "address=/box9pi.box9/192.168.1.1",
 	) -> None:
 		self._dhcp_conf_path = dhcp_conf_path
 		self._run = command_runner or _default_command_runner
 		self._service_name = service_name
 		self._systemctl_path = systemctl_path
 		self._dhcp_lease_file = dhcp_lease_file
+		self._address = address
 
 	def stop(self) -> None:
 		self._run_command([self._systemctl_path, "stop", self._service_name])
@@ -83,7 +88,7 @@ class DnsmasqManager:
 			return DnsmasqStatus(running=False, status_text=str(e))
 
 	def write_dhcp_conf(self, devices: Sequence[dict[str, str]]) -> None:
-		writer = DnsmasqConfigWriter(dhcp_lease_file=self._dhcp_lease_file)
+		writer = DnsmasqConfigWriter(dhcp_lease_file=self._dhcp_lease_file, address=self._address)
 		writer.write_config(devices, self._dhcp_conf_path)
 
 	def apply(self, devices: Sequence[dict[str, str]]) -> None:
