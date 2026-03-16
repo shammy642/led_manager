@@ -10,7 +10,7 @@ Player  →  Device  →  Receiver
 
 | Entity | Description |
 |--------|-------------|
-| **Player** | Top-level grouping (e.g. a video player) |
+| **Player** | Top-level grouping (e.g. a performer) |
 | **Device** | A logical device belonging to a player |
 | **Receiver** | An networked receiver or device with a unique name, IP address, and MAC address |
 
