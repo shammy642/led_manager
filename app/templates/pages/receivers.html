@@ -21,9 +21,11 @@
                 hx-target="#apply-changes-status"
                 hx-swap="innerHTML"
                 hx-disabled-elt="this"
+                hx-indicator="#apply-changes-spinner"
             >
                 Apply Changes
             </button>
+            <span id="apply-changes-spinner" class="htmx-indicator" aria-label="Applying…">&#8987;</span>
         </div>
     </div>
     <div id="apply-changes-status"></div>

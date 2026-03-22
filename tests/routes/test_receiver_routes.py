@@ -48,6 +48,14 @@ class TestReadReceivers:
 		assert response.status_code == 200
 		assert "text/html" in response.headers["content-type"]
 
+	def test_read_receivers_has_apply_changes_spinner(self, client):
+		"""Test that the Apply Changes button has a spinner indicator element."""
+		response = client.get("/receivers")
+		
+		assert response.status_code == 200
+		assert 'id="apply-changes-spinner"' in response.text
+		assert 'hx-indicator="#apply-changes-spinner"' in response.text
+
 	def test_read_receivers_displays_receivers(self, client, session):
 		"""Test that the receivers page displays all receivers."""
 		create_receiver(
